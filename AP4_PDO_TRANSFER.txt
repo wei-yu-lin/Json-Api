@@ -1,0 +1,849 @@
+
+	SUBROUTINE	DH$_PDO_TO_COIL
+	1		(
+	1		PDO
+	1		)
+ 
+	IMPLICIT 	NONE
+ 
+C	Include
+C	-----------------------------------------------------------------------
+	INCLUDE 	'DH$INC:DH.INC'
+	INCLUDE		'DH$INC:AP4_PDO.INC'
+	INCLUDE		'DH$INC:AP4_PDI.INC'
+	INCLUDE		'HPS$DB$INC:PCM0020M.INC'
+	INCLUDE		'HPS$DB$INC:PCM0100M.INC'
+        INCLUDE         'HPS$DB$INC:PCM0030M.INC'
+        INCLUDE         'CPS$INC:ORD.INC' 
+C	argument
+C	-----------------------------------------------------------------------
+	RECORD	/AP4_PDO/	PDO
+	RECORD	/AP4_PDI/	PDI
+ 
+C	Record
+C	-----------------------------------------------------------------------
+	RECORD	/PCM0020M/	COIL
+	POINTER		( COIL_PNT , COIL )
+
+        RECORD	/PCM0030M/      COILH
+
+
+        RECORD	/PCM0100M/      P100M
+        RECORD	/ORDB011M_DEF/  L4ORD 
+ 
+ 
+C	variable
+C	-----------------------------------------------------------------------
+CX	BYTE		MOVE_STEP
+	INTEGER*2	CUT,I
+	CHARACTER*14	VMS_DATE
+	CHARACTER*1	DIVIDE_YN
+	BYTE		NO_OF_COILS
+	CHARACTER*1	MILL_CODE
+	INTEGER*4	STATUS,U_REP
+	CHARACTER*2	OPER_CODE
+ 
+	INTEGER*4	TOTAL_REDUCTION
+	CHARACTER*1	RESTRICT_APN
+        CHARACTER*18    CDT	
+	CHARACTER*3     NEXT_STATION
+        CHARACTER*3     CURR_STATION
+        CHARACTER*3     PREV_STATION
+        REAL*4          TMP_WEIGHT
+        REAL*4          MOTHER_WEIGHT
+        INTEGER*4       PCM_WEIGHT
+        CHARACTER*2     IC_CODE
+        CHARACTER*11    BROTHER_COIL_NO
+	INTEGER*4       SQLCOD
+	INTEGER*4       L,M,N,CLEN
+	CHARACTER*7	S_DATE
+	CHARACTER*10	CCODE
+	CHARACTER*20	BCODE,ACTL_PCODE
+	CHARACTER*1	PLAY_CODE,CODE_FLAG,MIDC
+	CHARACTER*20    Z_CODE 
+	INTEGER*4       Z_IDX
+
+C	function
+C	-----------------------------------------------------------------------
+	INTEGER*4       PCM0100M_R
+	INTEGER*4	NORDB011M_R
+	INTEGER*4	PCM0020M_R
+	INTEGER*4	PCM0020M_U
+	INTEGER*4	PCM0030M_R
+	INTEGER*4	PCM0030M_U
+	INTEGER*4	COIL_MOVE
+	INTEGER*4	COIL_RECALL
+	INTEGER*4	COIL_CUT
+	INTEGER*4	OUTER_DIAMETER
+	INTEGER*4	CPS_RESTRICT_APN
+        INTEGER*4       GR_C8DATE_TO_BIN
+	INTEGER*4       DH_PLAY_CODE
+	INTEGER*4 	AP4_PDI_R 
+C	-----------------------------------------------------------------------
+C					CODE
+C	-----------------------------------------------------------------------
+	IF (PDO.TRANSFER .EQ. 'Y') THEN
+	   CALL DH_NOTICE('轉換碼已經是 Y')
+	   RETURN
+	ENDIF
+
+C	970103
+        IF (INDEX('GDB',PDO.SURFACE_CODE) .LT. 0) THEN 
+	   CALL DH_NOTICE('SURFACE_CODE不為GDB')
+	   RETURN
+	ENDIF
+
+        IF ((PDO.SURFACE_CODE .EQ. 'B' ) .AND.
+	1   (PDO.RUNNING_MODE_AP4(3:3) .NE. '1')) THEN
+	   CALL DH_NOTICE('RUNNING_MODE第三碼不為1')
+	   RETURN
+	ENDIF	 
+
+
+        IF ((PDO.SURFACE_CODE .EQ. 'D' ) .AND.
+	1   (PDO.RUNNING_MODE_AP4(3:3) .NE. '0')) THEN
+	   CALL DH_NOTICE('RUNNING_MODE第三碼不為0')
+	   RETURN
+	ENDIF	 
+
+C	IF (PDO.NET_WEIGHT - PDO.ENTRY_WEIGHT .GT. 0) THEN
+C           CALL DH_NOTICE('Net Weight 大於入料重')
+C           RETURN
+C 	ENDIF
+	
+	CALL GR_CURRENT_DATE_TIME ( CDT )
+	CALL GR_GET_LUN(U_REP)
+	OPEN    (
+	1       UNIT = U_REP,
+	1       FILE = 'CPS$LOG:AP4_TRAN.'//CDT(2:3)//CDT(5:6)//CDT(8:9),
+	1       STATUS = 'UNKNOWN',
+	1       ACCESS = 'APPEND',
+	1       ORGANIZATION = 'SEQUENTIAL',
+	1       CARRIAGECONTROL = 'LIST',
+	1       RECL = 132,
+	1       SHARED
+	1       ) 
+
+
+CD      判斷本製程是否為CAP
+C       是否要改CALL CPS_PCMB020M_SONLY
+        CALL CPS_PCMB020M_SEARCH_NEW
+	1  ( PDO.COIL_NO,
+	1    PREV_STATION,
+	1    CURR_STATION,
+	1    NEXT_STATION,
+	1    PCM_WEIGHT,
+	1    IC_CODE,
+	1    SQLCOD)
+ 
+C       --STEP1.搜尋相同的編號--
+	IF  ( SQLCOD .EQ. 0 ) THEN
+	    IF ((CURR_STATION .EQ. 'CAP' ) .AND. 
+	1	((IC_CODE .EQ. '32' ) .OR. (IC_CODE .EQ. '46'))) THEN
+	         MOTHER_WEIGHT = PCM_WEIGHT ! use no split weight for running_mode of input weight
+	    ELSE
+	        CALL DH_NOTICE(
+	1        '本製程不為CAP或IC_CODE<>32/46:'
+	1	//CURR_STATION//'-'//IC_CODE//' 不可結轉PDO')
+		RETURN
+	    ENDIF
+C       --STEP2.鋼捲編號縮減一碼再搜尋--
+	ELSE  
+	   CALL GR_ALLTRIM ( PDO.COIL_NO , CUT )
+	   IF (CUT .LE. 8) THEN
+	        CALL DH_NOTICE('COIL_NO 減一碼 找不到本製程,不可結轉PDO')
+		RETURN 
+	   ELSE
+	      CALL DH_INTERNAL_MSG
+	1	(' COIL_NO 減一碼 ='//PDO.COIL_NO(1:CUT-1)//'搜尋中...!',2)
+ 
+	        CALL CPS_PCMB020M_SEARCH_NEW
+	1  	( PDO.COIL_NO(1:CUT-1)//'   ',
+	1    	  PREV_STATION,
+	1    	  CURR_STATION,
+	1         NEXT_STATION,
+	1         PCM_WEIGHT,
+	1         IC_CODE,
+	1         SQLCOD)
+		IF ( SQLCOD .EQ. 0 ) THEN
+	            IF ((CURR_STATION .EQ. 'CAP' ) .AND. 
+	1	       ((IC_CODE .EQ. '32' ) .OR. (IC_CODE .EQ. '46'))) THEN
+	               CALL DH_INTERNAL_MSG
+	1	       (' COIL_NO 減一碼 找到本製程=CAP且狀態=32/46...!',2)
+	            ELSE
+	              CALL DH_NOTICE
+	1               ('COIL_NO 減一碼,本製程不為CAP或IC_CODE<>32/46:'
+	1		//CURR_STATION//'-'//IC_CODE//' 不可結轉')
+		      RETURN
+		    ENDIF
+
+		ELSE
+C       --STEP3.PDO鋼捲編號相同家族兄弟(A-Z)系列再搜尋--
+	           CALL DH_INTERNAL_MSG
+	1	   (' 判斷同一代兄弟鋼捲是否存在且上製程為CAP
+	1		且狀態=32/46...!',2)
+
+C	是否改CALL CPS_PCMB020M_BONLY.SFO
+
+        	   CALL CPS_PCMB020M_BROTHER
+	1  	      ( PDO.COIL_NO,
+	1	      'CAP',		! CHECK LINE
+	1  	      BROTHER_COIL_NO,
+	1	      SQLCOD)
+		   IF ( SQLCOD .EQ. 0 ) THEN
+	           CALL DH_INTERNAL_MSG
+	1	   (' 找到同一代兄弟鋼捲='//BROTHER_COIL_NO
+	1	      //'其上製程為CAP 開始結轉!',2 )
+		   ELSE
+	              CALL DH_NOTICE
+	1               ('找不到同一代兄弟鋼捲'//BROTHER_COIL_NO//',
+	1		且上製程為CAP, 不可結轉!')
+		      RETURN
+		   ENDIF
+		ENDIF
+	    ENDIF
+	ENDIF
+ 
+C	CALL DH_WORKING_OUTPUT(1)
+	
+CD	假設沒有分切
+	DIVIDE_YN = 'N'
+C	modi by yu68187 use pdo directly
+	IF ( PDO.COIL_NO .NE. PDO.MOTHER_COIL_NO ) DIVIDE_YN = 'Y'
+ 
+	CALL LIB$GET_VM ( SIZEOF(COIL) , COIL_PNT , )
+C	CALL LIB$GET_VM ( SIZEOF(ORDB) , ORDB_PNT , )
+ 
+	CUT = 0
+	COIL.COIL_ID = PDO.COIL_NO
+	DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
+ 
+CD	if 鋼捲編號不在鋼捲資料檔中
+	IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
+ 
+CD	   if 鋼捲編號超過8碼=>檢查是否為被分切之鋼捲
+	   CALL GR_ALLTRIM ( COIL.COIL_ID , CUT )
+	   IF (CUT .GT. 8) THEN
+	      COIL.COIL_ID(CUT:CUT) = ' '
+	      DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
+ 
+CD            分切時,壓下率需取母鋼捲 89/07/24
+              IF ( (TOTAL_REDUCTION .LE. 0) .AND.
+	1          (COIL.TOTAL_REDUCTION .LE. 100) ) THEN
+                TOTAL_REDUCTION = COIL.TOTAL_REDUCTION
+              END IF 
+ 
+	      IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+		 DH_ITEM_LIST.STATUS = COIL_CUT ( COIL.COIL_ID )
+		 IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
+		    CALL DH_NOTICE ('分切動作失敗')
+		    RETURN
+		 ENDIF
+	      ENDIF
+ 
+		COIL.FACTORY = 'C'
+	      DH_ITEM_LIST.STATUS = COIL_RECALL
+	1			(
+	1			COIL.COIL_ID,			! old coil-id
+	1			PDO.COIL_NO,			! new coil-id
+	1			COIL.FACTORY,
+	1			COIL.TOTAL_REDUCTION
+	1			)
+ 
+	      IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
+		 WRITE (6,*) '不在分切暫存檔',DH_ITEM_LIST.STATUS
+	         CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
+		 RETURN
+	      ENDIF
+	      CALL DH_NOTICE ('COIL_RECALL called ! check...')
+ 
+	      NO_OF_COILS = COIL.NO_OF_COILS
+	   ELSE
+	      CALL DH_INTERNAL_MSG(COIL.COIL_ID//'不在鋼捲資料檔',2)
+	      CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
+	      RETURN
+	   ENDIF
+ 
+CD	   再確定PDO之鋼捲編號是否已存在於鋼捲資料檔
+	   COIL.COIL_ID = PDO.COIL_NO
+	   DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
+
+	   WRITE (6,*) 'coil_id=',DH_ITEM_LIST.STATUS,COIL.COIL_ID
+
+CD	   if 鋼捲編號不在鋼捲資料檔中
+	   IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
+	      CALL DH_INTERNAL_MSG('不在鋼捲資料檔中',3)
+	      CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
+	      RETURN
+	   ENDIF
+
+	ENDIF
+ 
+C	961226
+C	   PLAY_CODE判斷
+	   I = COIL.CURR_PROC_IDX
+           BCODE = COIL.ACTL_PCODE(I+1:)
+
+
+C           PLAY_CODE = 'N'
+           P100M.COIL_IN_DIAM = 0
+           P100M.EDGING = ' '
+           L4ORD.LINE_MARKING = ' '
+ 
+           P100M.ORD_NO = COIL.ORD_NO
+           L4ORD.ORDER_NO = COIL.ORD_NO(1:7)
+           L4ORD.ORDER_ITEM = COIL.ORD_NO(8:9)
+	   DH_ITEM_LIST.STATUS = PCM0100M_R ( P100M )
+           DH_ITEM_LIST.STATUS = NORDB011M_R ( L4ORD )	
+
+	PDI.COIL_NO = PDO.MOTHER_COIL_NO
+	CALL AP4_PDI_R ( PDI )
+
+
+	   IF      ((INDEX(BCODE,'L') .GT. 0) .OR.
+	1           (INDEX(BCODE,'M') .GT. 0) .OR.
+	1           (INDEX(BCODE,'N') .GT. 0) .OR.
+	1           (INDEX(BCODE,'Z') .GT. 0)) THEN
+           		CODE_FLAG = 'Y'
+	   ELSE
+             		CODE_FLAG = 'N'
+	   ENDIF
+
+C 2019/8/22依生計黃協理指示改成APN_NO="NS02"、"TL01"條件
+C        IF  (
+C	1    (P100M.COIL_IN_DIAM .EQ. 508 ) .OR.
+C	1    (P100M.EDGING .EQ. 'C') .OR.
+C	1    (CODE_FLAG .EQ. 'Y') .OR.
+C	1    ((L4ORD.LINE_MARKING .NE. 'NNNN') .AND.
+C	1     (L4ORD.LINE_MARKING .NE. '')) .OR.
+C	1    (PDI.APN_NO .EQ. 'NS02') .OR. 
+C	1    (PDI.APN_NO .EQ. 'TL01') .OR.
+C	1    (PDI.APN_NO .EQ. 'GP01')
+C	1   ) THEN  
+C            PLAY_CODE = 'Y'
+C        ELSE
+C            PLAY_CODE = 'N'
+C        ENDIF
+
+C	   970521改
+C	   DH_ITEM_LIST.STATUS = DH_PLAY_CODE ( PLAY_CODE,COIL.ORD_NO,BCODE )
+	   PDO.PLAY_CODE = PDI.PLAY_CODE
+
+	   WRITE(U_REP,*) PDO.COIL_NO,'PLAY_CODE=',PDO.PLAY_CODE
+
+	IF (COIL.CURR_STATION .NE. 'CAP') THEN
+	   IF ((COIL.PREV_STATION .EQ. 'CAP') .AND.
+	1      (COIL.IC_CODE .EQ. '32')) THEN
+	      CALL DH_NOTICE('Msg 77: 本製程不是 CAP ,'//
+	1		  '請至鋼捲資料檔更改製程路徑')
+	   ELSE IF ((COIL.PREV_STATION .EQ. 'CAP') .AND.
+	1           (INDEX('46.13',COIL.IC_CODE) .GT. 0)) THEN
+	      CALL DH_NOTICE('Msg 88: 鋼捲已排入下製程 ,'//
+	1		  '無法更改鋼捲資料檔')
+	   ELSE IF (COIL.PREV_STATION .NE. 'CAP') THEN
+	      CALL DH_NOTICE('Msg 99: 鋼捲已於下製程產出 ,'//
+	1		  '無法更改鋼捲資料檔')
+	   ENDIF
+ 
+	   RETURN
+	ENDIF
+
+ 
+C	CALL LIB$GET_VM ( SIZEOF(PDI) , PDI_PNT , )
+C	PDI.RETRIEVAL_AREA = ' '
+C	PDI.COIL_NO = PDO.COIL_NO
+C	CALL AP4_PDI_R ( PDI )
+
+C	---START TO TRANSFER FIELD---
+C       ---1.鋼捲編號---
+C	不變
+C       ---2.鋼胚編號---
+C	不變
+C       ---3.鋼種編號---
+C	不變
+C       ---4.鋼種類別---
+C	不變
+C       ---5.鋼種系列---
+C	不變
+
+C	---6.鋼捲厚度--- 
+	IF (PDO.ACTUAL_THICKNESS .GT. 0) THEN
+	   COIL.COIL_THICK = PDO.ACTUAL_THICKNESS
+	ENDIF
+ 
+C       ---7.鋼捲寬度---
+	IF (PDO.ACTUAL_WIDTH .GT. 0) THEN
+	   COIL.COIL_WIDTH = PDO.ACTUAL_WIDTH
+	ENDIF
+ 
+C       ---8.鋼捲重量---
+	IF (PDO.NET_WEIGHT .GT. 0) THEN
+	   COIL.COIL_WT = PDO.NET_WEIGHT
+	ENDIF
+ 
+C       ---9.鋼捲內徑---
+C	COIL.INNER_DIAM = 610,由PDO固地定傳610進來! constant
+
+        IF (PDO.ACTUAL_INNER_DIAMETER .GT. 0) THEN
+C	   COIL.INNER_DIAM = PDO.ACTUAL_INNER_DIAMETER
+           COIL.INNER_DIAM = 610
+        ENDIF
+
+C       ---10.鋼捲外徑---
+	IF (PDO.ACTUAL_OUTER_DIAMETER .GT. 0) THEN
+	   COIL.OUTER_DIAM = PDO.ACTUAL_OUTER_DIAMETER
+	ELSE IF (COIL.COIL_WIDTH .GT. 0) THEN
+	   COIL.OUTER_DIAM = 0
+	ENDIF
+ 
+CD	重新計算鋼捲外徑
+	COIL.OUTER_DIAM = OUTER_DIAMETER
+	1		(
+	1		COIL.STEEL_GRADE,
+	1		COIL.COIL_WT,
+	1		COIL.COIL_WIDTH,
+	1		610 	!COIL.INNER_DIAM
+	1		)
+ 
+C       ---11.品管判級---
+	COIL.CLASS_CODE = PDO.CLASS_CODE
+
+C       ---12.目前儲位---
+        COIL.STORAGE = ' '
+
+C       ---15.實際製程編號(生產)---
+C	需先處理15.實際製程編號(生產)
+C	才可決定13.鋼捲狀態
+
+	I = COIL.CURR_PROC_IDX
+	BCODE = COIL.ACTL_PCODE(I+1:)
+
+C 1000512 生計黃揮升 加上 站別 Z 判斷,有Z則取Z之後站別,Z之前去除
+C Z之後沒有則直接在Z後加上$,並且要依序判斷
+
+	Z_IDX = 0
+	Z_IDX = INDEX(BCODE,'Z')
+	IF(Z_IDX .GT. 0) THEN
+	  Z_CODE = BCODE(Z_IDX:) 
+	ELSE
+	  Z_CODE = '$'
+	ENDIF
+
+	MIDC = ''
+
+        IF (PDO.NET_WEIGHT .GE. 3500) THEN
+	    IF (PDO.PLAY_CODE .EQ. 'Y') THEN
+		IF (PDO.RUNNING_MODE_AP4(3:3) .EQ. '1') THEN
+		    IF (PDI.APN_NO .EQ. 'GD01') THEN
+			ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'S'//Z_CODE
+		    ELSEIF ((L4ORD.LINE_MARKING .NE. 'NNNN') .AND.
+	1	    	    (L4ORD.LINE_MARKING .NE. '')) THEN
+			ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'S'//Z_CODE 
+		    ELSEIF ((P100M.EDGING .EQ. 'C') .AND.
+	1		    (PDO.ACTUAL_THICKNESS .GE. 0.7)) THEN
+			ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'Y'//Z_CODE 
+		    ELSEIF ((P100M.EDGING .EQ. 'C') .AND. 
+	1		     (PDO.ACTUAL_THICKNESS .LT. 0.7)) THEN   
+			ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'T'//Z_CODE
+		   ELSEIF ((P100M.COIL_IN_DIAM .EQ. 508) .AND. 
+	1  		   (PDO.ACTUAL_THICKNESS .GE. 0.5)) THEN
+			ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'Y'//Z_CODE
+		   ELSEIF ((P100M.COIL_IN_DIAM .EQ. 508) .AND.     
+	1		   (PDO.ACTUAL_THICKNESS .LT. 0.5)) THEN  
+			ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'T'//Z_CODE
+		   ELSE
+			ACTL_PCODE = COIL.ACTL_PCODE
+		   ENDIF	
+	       ELSEIF (PDO.RUNNING_MODE_AP4(3:3) .EQ. '0') THEN
+		   IF((INDEX(BCODE,'L') .EQ. 0) .AND.
+	1	      (INDEX(BCODE,'M') .EQ. 0) .AND.
+	1	      (INDEX(BCODE,'N') .EQ. 0)) THEN
+			ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'S'//Z_CODE
+                   ELSE
+                        ACTL_PCODE = COIL.ACTL_PCODE
+                   ENDIF  
+	       ENDIF
+	    ELSE
+		IF (PDO.RUNNING_MODE_AP4(3:4) .EQ. '10') THEN
+C		 	CCODE = 'RS'
+C		    	CLEN = 2
+		 	CCODE = 'RSTUY'
+		    	CLEN = 5
+		ELSEIF ((PDO.RUNNING_MODE_AP4(3:4) .EQ. '01') .AND.
+	1	        (COIL.ACTL_PCODE(1:1) .NE. 'D')) THEN
+		    	CCODE = 'TUY'
+		    	CLEN = 3
+			MIDC = 'S'
+		ELSEIF (PDO.RUNNING_MODE_AP4(3:4) .EQ. '11') THEN
+		    	CCODE = 'RSTUY'
+		    	CLEN = 5
+		ELSEIF (PDO.RUNNING_MODE_AP4(3:4) .EQ. '00') THEN
+		    	CLEN = 0
+		ELSE
+		    	CLEN = 0
+		ENDIF
+		L = 1
+		DO WHILE (L .LE. CLEN)
+            	    DO M = I,20
+                	N = INDEX(BCODE,CCODE(L:L))
+                	IF (N .GT. 0) THEN
+                    	    BCODE = BCODE(1:N-1) // BCODE(N+1:)
+                	ENDIF
+            	    END DO
+		  L = L + 1
+        	END DO
+		ACTL_PCODE = COIL.ACTL_PCODE(1:I) // TRIM(MIDC) // BCODE
+	    ENDIF
+	ELSE
+	    ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'$'
+	    ACTL_PCODE(1:1) = PDO.SURFACE_CODE
+	ENDIF
+
+	COIL.ACTL_PCODE = ACTL_PCODE
+        WRITE(U_REP,*) PDO.COIL_NO,'製程:',COIL.ACTL_PCODE
+
+C       ---13.鋼捲狀態---
+CD      決定鋼捲狀態
+	I = COIL.CURR_PROC_IDX
+	IF ((COIL.ACTL_PCODE(I+1:I+1) .EQ. '$') .OR.
+	1   (COIL.ACTL_PCODE(I+1:I+1) .EQ. ' ')) THEN
+	  IF (INDEX('69.70',PDO.QC_CODE) .GT. 0) THEN
+	    COIL.IC_CODE = '70'
+	  ELSE
+	    COIL.IC_CODE = '65'
+	  ENDIF
+	ELSE
+	  IF (INDEX('69.70',PDO.QC_CODE) .GT. 0) THEN
+	    COIL.IC_CODE = '70'
+	  ELSE
+	    COIL.IC_CODE = '32'
+	  ENDIF
+	ENDIF
+C       ---14.計劃製程編號(訂單)---
+C	不變
+
+C       ---16.目前產線作業代碼---
+C	COIL_MOVE執行
+C       ---17.目前實際製程索引---
+C	COIL_MOVE執行
+C       ---18.計劃冶金編號---
+C	不變
+C       ---19.實際冶金編號---
+C	不變
+C       ---20.上製程產線---
+C	COIL_MOVE執行
+C       ---21.本製程產線---
+C	COIL_MOVE執行
+C       ---22.下製程產線---
+C	COIL_MOVE執行
+
+C       ---23.本站之軋延周---
+C	COIL_MOVE執行
+        COIL.R_WEEK = ' ' 
+
+C       ---24.上製程產出日期---
+C	COIL_MOVE執行
+CD      若PDO傳出時間=240000則將其改成下一日的000000
+CD      example , 20071015 24:00:00 -> 20071016 00:00:00
+        IF (PDO.FINISH_TIME .EQ. '240000') THEN
+            PDO.FINISH_TIME = '000000'
+            I = 1
+        ELSE
+            I = 0
+        ENDIF
+        VMS_DATE = PDO.FINISH_DATE//PDO.FINISH_TIME
+        STATUS = GR_C8DATE_TO_BIN ( VMS_DATE , %REF(COIL.VMS_DATE) )
+        IF (.NOT. STATUS) THEN
+           CALL DH_NOTICE('產出時間格式錯誤')
+           RETURN
+        ENDIF
+
+        IF (I .EQ. 1) THEN
+           CALL GR_ADD_DAY ( %REF(COIL.VMS_DATE) , 1.0 , %REF(COIL.VMS_DATE) )
+        ENDIF  
+
+
+C       ---25.合併鋼捲數量---
+        COIL.NO_OF_COILS = 1
+ 
+C       ---26.預定分切之製程站別---
+        COIL.CUT_STATION= ' '
+
+
+C       ---27.? 31.---
+C	不變
+C       ---32.? 36.---
+C	不變PDO.DEFECT
+C       ---37.爐號---
+C	不變
+C       ---38.檢驗後出料品質碼---
+	COIL.APN_CODE = PDO.SURFACE_CODE
+C       ---39.切邊碼---
+C	不變
+C       ---40.託工編號---
+        COIL.OEM_NO = ' '
+C       ---41.鋼帶標記---
+        COIL.LINE_MARKING = ' '
+
+C       ---42.套筒類別---
+        IF (PDO.EXIT_SLEEVE_THICKNESS .GT. 0) THEN
+            WRITE (COIL.SLEEVE_KIND,FMT='(I2)')
+	1	PDO.EXIT_SLEEVE_THICKNESS
+        ELSE
+            COIL.SLEEVE_KIND = ' '
+        ENDIF 
+
+C       ---43.襯紙類別---
+        COIL.PAPER_CODE = PDO.EXIT_PAPER_CODE
+
+C       ---44.母鋼捲號碼---
+        COIL.MOTHER_COIL_NO = PDO.MOTHER_COIL_NO
+
+C       ---45.上製程排程編號---
+        COIL.PREV_SCHD_NO = PDO.SCHD_NO
+
+C       ---46.作業狀態碼---
+        COIL.OPER_CODE = '56'
+
+C       ---47.急單碼---
+        COIL.RUSH_ORDER = ' '
+
+C       ---48.鋼捲應用碼---
+        COIL.COIL_APPLY = ' '
+
+C       ---49.煉鋼頭尾塊---
+C	不變
+C       ---50.鋼捲長度--
+        IF (PDO.ACTUAL_LENGTH .GT. 0) THEN
+           COIL.COIL_LENGTH = PDO.ACTUAL_LENGTH
+        ENDIF 
+
+C       ---51.產品代碼---
+	COIL.PRODUCT_CODE = COIL.ACTL_PCODE(1:1)
+
+C       ---52.品保備註--
+        COIL.QC_COMMENT = PDO.QC_COMMENT
+ 
+C       ---53.廠區--
+C        COIL.FACTORY = 'C'
+C	前段程式已有定義
+C       ---54.冷軋機軋下率-- 
+C	不變COIL.TOTAL_REDUCTION 
+
+C       分鋼捲讀取母鋼捲之下壓率TOTAL_REDUCTION 89/05/01
+C	CALL CPS_TOT_REDUCTION  !在TEST目錄下
+C	1       (
+C	1       PDO.COIL_NO,
+C	1       TOTAL_REDUCTION,
+C	1       'AP4'
+C	1       )
+
+C       ---55.用途限定碼--
+        DH_ITEM_LIST.STATUS = CPS_RESTRICT_APN
+	1               (
+	1                'CAP',
+	1                PDO.COIL_NO,
+	1                PDO.SCHD_NO,
+	1                RESTRICT_APN
+	1               )
+	IF ((DH_ITEM_LIST.STATUS .NE. 0) .AND.
+	1   (RESTRICT_APN .NE. ' ')) THEN
+             COIL.RESTRICT_APN = RESTRICT_APN
+	ENDIF
+C       ---56? 59系統日期時間--
+C       ---60.預估繳庫日期--
+        COIL.FORECAST_DATE = ' ' 
+ 
+CD      ******************************************************
+        WRITE (U_REP,*) 'AP4:DH$_PDO_TO_COIL : ',COIL.COIL_NO,
+	1               ' ', 'LENGTH: ', COIL.COIL_LENGTH
+        WRITE(U_REP,*) PDO.COIL_NO,'壓下率',TOTAL_REDUCTION
+CD      ****************************************************** 
+ 
+ 
+CD      ****************************************************
+CD      **  研磨碼
+CD      ****************************************************
+CX	IF (PDO.GRINDING_PARAMETER .LE. ' ') THEN
+CX	  IF (INDEX('RF',PDO.CLASS_CODE) .GT. 0) THEN
+CX	    COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+1:) = 'Q'//
+CX	1               COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+1:)
+CX	  ELSEIF (PDO.CLASS_CODE .EQ. 'S') THEN
+CX	    COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+2:20) = ' '
+CX	    COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+1:) = '$'
+CX	  ELSEIF (INDEX('FRS',PDO.CLASS_CODE) .LE. 0) THEN
+CX	    IF (COIL.ACTL_PCODE(1:1) .EQ. 'B') THEN
+CX	      ORDB.ORDER_NO = COIL.CB_FIRST_ORD_NO(1:7) !改取PCMB100M
+CX	      ORDB.ORDER_ITEM = COIL.CB_FIRST_ORD_NO(8:9)
+CX	      DH_ITEM_LIST.STATUS = PCM0100M_R ( ORDB )
+CX	      IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+CX		IF ((INDEX('3',COIL.CLASS_CODE) .GT. 0) .AND. !951226 23TO 3
+CX	1           (COIL.NEXT_STATION .EQ. 'SPM') .AND.
+CX	1           (INDEX('1234',ORDB.ORD_NO(2:2)) .GT. 0) .AND.
+CX	1	    (ORDB.ORDER_INNER_DIAM .EQ. 610) .AND.  ! 訂單內徑
+CX	1           (ORDB.EDGING.EQ. 'M')) THEN
+CX		    COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+1:) = 'R$'
+CX		951226 0.8 TO 1.0
+CX		ELSEIF ((COIL.NEXT_STATION .EQ. 'SPM') .AND.    ! 下製程SPM
+CX	1               (COIL.COIL_THICK .LE. 1.0) .AND.        ! 鋼捲厚度<=0.8
+CX	1               (ORDB.ORDER_INNER_DIAM .EQ. 610) .AND.  ! 訂單內徑
+CX	1               (ORDB.EDGING.EQ. 'M').AND.
+CX	1		(COIL.STEEL_GRADE(2:2) .NE. '4') 	! 950526非400
+CX	1             ) THEN
+CX		  COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+1:) = 'R$'
+CX		ELSEIF ((ORDB.ORD_NO(2:2) .EQ. 'E') .AND.       ! 港澳大陸地區
+CX	1               (ORDB.ORDER_INNER_DIAM .EQ. 610) .AND.  ! 訂單內徑
+CX	1               (ORDB.EDGING.EQ. 'M') .AND.
+CX	1               (COIL.NEXT_STATION .EQ. 'SPM') .AND.	! 950526非400
+CX	1		(COIL.STEEL_GRADE(2:2) .NE. '4')
+CX	1             ) THEN
+CX		  COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+1:) = 'R$'
+CX		ELSE
+CX	        ENDIF
+CX	      ELSE
+CX		CALL DH_NOTICE('PCMB100M READ ERROR !!')
+CX	      ENDIF
+CX	    ENDIF
+CX	  ELSE
+CX	  ENDIF
+CX	ELSE
+CX	  IF ((INDEX('12',PDO.GRINDING_PARAMETER) .GT. 0) .AND.
+CX	1     (INDEX('1AB23DC',COIL.CLASS_CODE) .GT. 0)) THEN
+CX	    I = COIL.CURR_PROC_IDX
+CX	    COIL.ACTL_PCODE(I+1:) = 'VMP'// COIL.ACTL_PCODE(I+1:)
+CX	  ELSEIF ((INDEX('3',PDO.GRINDING_PARAMETER) .GT. 0)  .AND.
+CX	1         (INDEX('1AB23DC',COIL.CLASS_CODE) .GT. 0)) THEN
+CX	    I = COIL.CURR_PROC_IDX
+CX	    COIL.ACTL_PCODE(I+1:) = 'WMP'// COIL.ACTL_PCODE(I+1:)
+CX	  ELSEIF ((INDEX('45',PDO.GRINDING_PARAMETER) .GT. 0)  .AND.
+CX	1         (INDEX('1AB23DC',COIL.CLASS_CODE) .GT. 0)) THEN
+CX	    I = COIL.CURR_PROC_IDX
+CX	    COIL.ACTL_PCODE(I+1:) = 'NVMP'// COIL.ACTL_PCODE(I+1:)
+CX	  ELSEIF ((INDEX('6',PDO.GRINDING_PARAMETER) .GT. 0)  .AND.
+CX	1         (INDEX('1AB23DC',COIL.CLASS_CODE) .GT. 0)) THEN
+CX	    I = COIL.CURR_PROC_IDX
+CX	    COIL.ACTL_PCODE(I+1:) = 'NWMP'// COIL.ACTL_PCODE(I+1:)
+CX	  ENDIF
+CX	ENDIF
+C	將SHIFT_DATE由8碼轉為7碼
+        CALL GR_C8_TO_C7DATE(PDO.SHIFT_DATE,S_DATE)
+
+	DH_ITEM_LIST.STATUS = COIL_MOVE 
+	1		(
+	1		COIL.COIL_ID,
+	1		%REF(COIL.COIL_WIDTH),
+	1		%REF(COIL.COIL_THICK),
+	1		%REF(COIL.COIL_WT),
+	1		%REF(COIL.INNER_DIAM),
+	1		%REF(COIL.OUTER_DIAM),
+	1		%REF(COIL.STORAGE),
+	1		%REF(COIL.VMS_DATE),
+	1		%REF(COIL.CLASS_CODE),
+	1		%REF(COIL.IC_CODE),
+	1		%REF(PDO.DEFECT_CODE1),
+	1		%REF(PDO.DEFECT_CODE2),
+	1		%REF(PDO.DEFECT_CODE3),
+	1		%REF(PDO.DEFECT_CODE4),
+	1		%REF(PDO.DEFECT_CODE5),
+	1		%REF(COIL.ACTL_PCODE),
+	1		'CAP',
+	1		PDO.SCHD_NO,
+	1		DIVIDE_YN,
+	1		%REF(COIL.COIL_LENGTH),
+	1		%REF(COIL.OEM_NO),
+	1		%REF(S_DATE),
+	1		%REF(COIL.MOTHER_COIL_NO),
+	1               COIL.LINE_MARKING,
+	1		%REF(COIL.OPER_CODE),
+	1		%REF(COIL.EDGING),
+	1		%REF(PDO.QC_LOCK),
+	1               %REF(COIL.QC_COMMENT),
+	1		COIL.TOTAL_REDUCTION,
+	1               COIL.RESTRICT_APN, ! 訂單限定用途碼   
+	1		COIL.SLEEVE_KIND,
+	1		COIL.PAPER_CODE
+	1		)
+ 
+ 
+	IF (.NOT. BTEST(DH_ITEM_LIST.STATUS,0) ) THEN
+	   CALL DH_NOTICE ('鋼捲資料檔未更新')
+	ENDIF
+ 
+	IF (BTEST(DH_ITEM_LIST.STATUS,1) ) THEN
+
+           COIL.COIL_ID = PDO.COIL_NO
+           STATUS = PCM0020M_R ( COIL )
+           IF (STATUS .EQ. 0) THEN     
+             COIL.R_WEEK = ' '
+             COIL.NO_OF_COILS = 1
+             COIL.CUT_STATION = ' '
+             COIL.APN_CODE = PDO.SURFACE_CODE
+             COIL.PREV_SCHD_NO = PDO.SCHD_NO
+             COIL.RUSH_ORDER = ' '
+             COIL.COIL_APPLY = ' '
+             COIL.FACTORY = 'C'
+             COIL.FORECAST_DATE = ' '
+ 
+             DH_ITEM_LIST.STATUS = PCM0020M_U ( COIL )
+        	    WRITE(U_REP,*) COIL.COIL_NO,'SURFACE_CODE=',
+	1		COIL.APN_CODE
+             IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+C            -----再次更新COIL_MOVE未更新PCMB030M部份------- 
+                COILH.COIL_NO = PDO.COIL_NO
+                COILH.SCHD_NO = PDO.SCHD_NO 
+                COILH.STATION = 'CAP'
+                DH_ITEM_LIST.STATUS = PCM0030M_R ( COILH , %VAL(-1) )
+                IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+                    DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
+                    IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+                      COILH.STEEL_GRADE = PDO.STEEL_GRADE
+                      COILH.APN_CODE = PDO.SURFACE_CODE
+                      COILH.HEAT_NO = COIL.HEAT_NO
+                      COILH.MIC_NO  = COIL.ACTL_MIC_NO
+                      IF (COILH.STATION_IDX .LT. 3) THEN
+                          COILH.PREV_STATION = ' '
+                      ENDIF
+                      COILH.PREV_SCHD_NO = COIL.PREV_SCHD_NO
+                      COILH.SLAB_ID = COIL.SLAB_ID
+                      COILH.OEM_LINE = ' '
+                    ENDIF
+                    DH_ITEM_LIST.STATUS = PCM0030M_U ( COILH, %VAL(-1))
+        	    WRITE(U_REP,*) COILH.COIL_NO,'SURFACE_CODE=',
+	1		COILH.APN_CODE
+
+                ENDIF
+             ENDIF
+           ENDIF
+
+	   PDO.TRANSFER = 'Y'
+	   CALL AP4_PDO_U ( PDO )
+	   DH_ITEM_LIST.ADDR_TAB.DATA_BUF = %LOC(PDO)
+           CALL GR_C8_TO_C7DATE(PDO.START_DATE,PDO.START_DATE)
+           CALL GR_C8_TO_C7DATE(PDO.FINISH_DATE,PDO.FINISH_DATE)
+           CALL GR_C8_TO_C7DATE(PDO.SHIFT_DATE,PDO.SHIFT_DATE) 
+	   CALL DH_FORM_SEND()
+
+	   CALL DH_INTERNAL_MSG('處理完畢',2)
+C	   CALL PCM0031M_I
+C	1		(
+C	1		H$AP4,
+C	1		PDO.COIL_NO,
+C	1		PDO.SCHD_NO,
+C	1		COIL.VMS_DATE
+C	1		)
+	ELSE
+	   CALL DH_NOTICE ('製程記錄檔未更新')
+	ENDIF
+ 
+9000	CONTINUE
+ 
+	CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
+C	CALL LIB$FREE_VM ( SIZEOF(ORDB) , ORDB_PNT , )
+C	CALL LIB$FREE_VM ( SIZEOF(PDI) , PDI_PNT , )
+
+        CLOSE(UNIT=U_REP)               !
+        CALL    LIB$FREE_LUN ( U_REP )  ! 
+
+	RETURN
+	END
+ 
