@@ -1,0 +1,2186 @@
+
+Form FRM_MSK_WIN
+
+    Form Data 
+        L_SLAB_ID Character(10)
+        L_PROD_ID Character(11)
+        SLAB_ID Character(10)
+        PROD_ID Character(11)
+        SCHD_NO Character(4)
+        PROMPT_STRING Character(38)
+        PROMPT2 Character(74)
+        LOG_TYPE Character(1)
+        LOG_ID Word Integer
+        LOG_STR Character(11)
+        NO_OF_COIL Word Integer
+        SEQ Word Integer
+        COIL_FILTER Character(2)
+        PLAN_SEQ Character(20)
+        PRODUCT_CODE Character(1)
+        PCODE01 Character(1)
+        PCODE02 Character(1)
+        PCODE03 Character(1)
+        PCODE04 Character(1)
+        PCODE05 Character(1)
+        PCODE06 Character(1)
+        PCODE07 Character(1)
+        PCODE08 Character(1)
+        PCODE09 Character(1)
+        PCODE10 Character(1)
+        PCODE11 Character(1)
+        PCODE12 Character(1)
+        PCODE13 Character(1)
+        PCODE14 Character(1)
+        PCODE15 Character(1)
+        PCODE16 Character(1)
+        PCODE17 Character(1)
+        PCODE18 Character(1)
+        PCODE19 Character(1)
+        PCODE_IDX Byte Integer
+        COIL_THICK FFloating
+	QUERY_YEAR Character(3)
+        QUERY_MONTH Character(2)
+        DATE_1 Character(7)
+        DATE_2 Character(7)
+        STEEL_CODE Character(1)
+    End Data
+
+    Form Record PROCESS_CODE_REC
+        PLAN_SEQ Character(20)
+        PRODUCT_CODE Character(1)
+        PCODE01 Character(1)
+        PCODE02 Character(1)
+        PCODE03 Character(1)
+        PCODE04 Character(1)
+        PCODE05 Character(1)
+        PCODE06 Character(1)
+        PCODE07 Character(1)
+        PCODE08 Character(1)
+        PCODE09 Character(1)
+        PCODE10 Character(1)
+        PCODE11 Character(1)
+        PCODE12 Character(1)
+        PCODE13 Character(1)
+        PCODE14 Character(1)
+        PCODE15 Character(1)
+        PCODE16 Character(1)
+        PCODE17 Character(1)
+        PCODE18 Character(1)
+        PCODE19 Character(1)
+        PCODE_IDX Byte Integer
+    End Record
+
+    Form Record PROD_ID_REC
+        PROD_ID Character(11)
+    End Record
+
+    Form Record PDO_KEY_REC
+        PROD_ID Character(11)
+        SCHD_NO Character(4)
+    End Record
+
+    Form Record PROMPT_REC
+        PROMPT_STRING Character(38)
+    End Record
+
+    Form Record NOTICE_REC
+        PROMPT2 Character(74)
+    End Record
+
+    Form Record LOG_COND_REC
+        LOG_TYPE Character(1)
+        LOG_ID Word Integer
+        LOG_STR Character(11)
+    End Record
+
+    Form Record NO_OF_COIL_REC
+        SCHD_NO Character(4)
+        NO_OF_COIL Word Integer
+        SEQ Word Integer
+    End Record
+
+    Form Record COIL_FILTER_REC
+        COIL_FILTER Character(2)
+    End Record
+
+    Form Record PLAN_QUERY_REC
+        QUERY_YEAR Character(3)
+        QUERY_MONTH Character(2)
+    End Record	
+
+    Form Record DUMMY_REC
+        DUMMY Longword Integer
+    End Record
+
+    Form Record DATE_RANGE_REC
+        DATE_1 Character(7)
+        DATE_2 Character(7)
+    End Record
+
+    Form Record DATE_STEEL_REC
+        DATE_1 Character(7)
+        DATE_2 Character(7)
+	STEEL_CODE Character(1)
+    End Record
+
+
+    Layout BC_LAY
+        /*
+        Control Text Response "REM__"
+            Remove All
+            Return
+        End Response
+*/
+        Device
+            Terminal
+                Type %VT100
+        End Device
+        Size 24 Lines by 80 Columns
+        Display Viewport
+            %Terminal_Width_80
+
+        Viewport DEFAULT_MESSAGE_VIEWPORT
+            Lines 22 Through 22
+            Columns 1 Through 80
+        End Viewport
+
+        Viewport VP_3_40
+            Lines 10 Through 16
+            Columns 21 Through 60
+        End Viewport
+
+        Viewport VP_3_42
+            Lines 10 Through 18
+            Columns 21 Through 60
+        End Viewport
+
+        Viewport VP_3_28
+            Lines 10 Through 18
+            Columns 27 Through 54
+        End Viewport
+
+        Viewport VP_4_40
+            Lines 10 Through 17
+            Columns 21 Through 60
+        End Viewport
+
+        Viewport VP_5_40
+            Lines 10 Through 18
+            Columns 21 Through 60
+        End Viewport
+
+        Viewport NOTICT_VP
+            Lines 10 Through 14
+            Columns 3 Through 78
+        End Viewport
+
+        Viewport PLAN_QUERY_VP
+            Lines 7 Through 16
+            Columns 27 Through 62
+            Display Viewport
+                %Terminal_Width_80
+        End Viewport
+
+        Function F10_KEY
+            Is %F10
+        End Function
+
+        Function ESC_KEY
+            Is %PF4
+        End Function
+
+        Function SELECT_KEY
+            Is %SELECT
+        End Function
+
+        Function KP_ENTER_KEY
+            Is %ENTER
+        End Function
+
+        Function UP_ARROW
+            Is %UP
+        End Function
+
+        Function DOWN_ARROW
+            Is %DOWN
+        End Function
+
+        Function LEFT_ARROW
+            Is %LEFT
+        End Function
+
+        Function RIGHT_ARROW
+            Is %RIGHT
+        End Function
+
+        Enable Response
+            Return
+        End Response
+
+        Send Response NOTICE_REC
+            Activate
+                Panel NOTICE_PANEL
+            Return
+        End Response
+
+        Transceive Response PROCESS_CODE_REC PROCESS_CODE_REC
+            Activate
+                Panel PROCESS_CODE_PAN
+            Return
+        End Response
+
+        Transceive Response PROD_ID_REC PROD_ID_REC
+            Activate
+                Panel PROD_ID_PANEL
+            Return
+        End Response
+
+        Transceive Response PDO_KEY_REC PDO_KEY_REC
+            Activate
+                Panel PDO_KEY_PANEL
+            Return
+        End Response
+
+        Transceive Response PROMPT_REC PROMPT_REC
+            Activate
+                Panel YES_NO_PANEL
+            Return
+        End Response
+
+        Transceive Response LOG_COND_REC LOG_COND_REC
+            Activate
+                Panel LOG_COND
+            Return
+        End Response
+
+        Transceive Response NO_OF_COIL_REC NO_OF_COIL_REC
+            Activate
+                Panel NO_OF_COIL_PAN
+            Return
+        End Response
+
+        Transceive Response COIL_FILTER_REC COIL_FILTER_REC
+            Activate
+                Panel COIL_FILTER_PANEL
+            Return
+        End Response
+
+	Transceive Response PLAN_QUERY_REC PLAN_QUERY_REC
+            Activate
+                Panel PLAN_QUERY_PANEL
+            Return
+        End Response
+
+
+        Transceive Response DATE_RANGE_REC DATE_RANGE_REC
+            Activate
+                Panel DATE_RANGE_PAN
+            Return
+        End Response
+
+        Transceive Response DATE_STEEL_REC DATE_STEEL_REC
+            Activate
+                Panel DATE_STEEL_PAN
+            Return
+        End Response
+
+
+        Function Response NEXT ITEM
+            /*            If LAST ITEM Then
+                return " FEXI"
+            Else
+            End If */
+            Position To Next Item
+        End Response
+
+        Function Response DOWN_ARROW
+            If LAST ITEM Then
+                Position To First Item
+            Else
+                Position To Next Item
+            End If
+        End Response
+
+        Function Response UP_ARROW
+            If FIRST ITEM Then
+                Position To Last Item
+            Else
+                Position To Previous Item
+            End If
+        End Response
+
+
+        Message Panel DEFAULT_MESSAGE_PANEL
+            Viewport DEFAULT_MESSAGE_VIEWPORT
+        End Panel
+
+
+        Panel PROCESS_CODE_PAN
+            Viewport VP_3_40
+            Remove
+
+            Function Response LEFT_ARROW
+                Position To Left Item
+            End Response
+
+            Function Response RIGHT_ARROW
+                Position To Right Item
+            End Response
+
+            Function Response SELECT_KEY
+                POSITION TO ICON YES_ICON ON PROCESS_CODE_PAN
+            End Response
+
+            Function Response ESC_KEY
+                Return
+                    " FQUI"
+            End Response
+
+            Field PLAN_SEQ
+                Line 3
+                Column 12
+                Output Picture X'-'X(19)
+                Protected
+            End Field
+
+            Field PCODE01
+                Line 2
+                Column 14
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (2 < PCODE_IDX)
+            End Field
+
+            Field PCODE02
+                Line 2
+                Column 15
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (3 < PCODE_IDX)
+            End Field
+
+            Field PCODE03
+                Line 2
+                Column 16
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (4 < PCODE_IDX)
+            End Field
+
+            Field PCODE04
+                Line 2
+                Column 17
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (5 < PCODE_IDX)
+            End Field
+
+            Field PCODE05
+                Line 2
+                Column 18
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (6 < PCODE_IDX)
+            End Field
+
+            Field PCODE06
+                Line 2
+                Column 19
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (7 < PCODE_IDX)
+            End Field
+
+            Field PCODE07
+                Line 2
+                Column 20
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (8 < PCODE_IDX)
+            End Field
+
+            Field PCODE08
+                Line 2
+                Column 21
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (9 < PCODE_IDX)
+            End Field
+
+            Field PCODE09
+                Line 2
+                Column 22
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (10 < PCODE_IDX)
+            End Field
+
+            Field PCODE10
+                Line 2
+                Column 23
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (11 < PCODE_IDX)
+            End Field
+
+            Field PCODE11
+                Line 2
+                Column 24
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (12 < PCODE_IDX)
+            End Field
+
+            Field PCODE12
+                Line 2
+                Column 25
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (13 < PCODE_IDX)
+            End Field
+
+            Field PCODE13
+                Line 2
+                Column 26
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (14 < PCODE_IDX)
+            End Field
+
+            Field PCODE14
+                Line 2
+                Column 27
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (15 < PCODE_IDX)
+            End Field
+
+            Field PCODE15
+                Line 2
+                Column 28
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (16 < PCODE_IDX)
+            End Field
+
+            Field PCODE16
+                Line 2
+                Column 29
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (17 < PCODE_IDX)
+            End Field
+
+            Field PCODE17
+                Line 2
+                Column 30
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (18 < PCODE_IDX)
+            End Field
+
+            Field PCODE18
+                Line 2
+                Column 31
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (19 < PCODE_IDX)
+            End Field
+
+            Field PCODE19
+                Line 2
+                Column 32
+                Active Highlight
+                    Reverse
+                Autoskip
+                Output Picture X
+                Uppercase
+                Protected
+                    When (20 < PCODE_IDX)
+            End Field
+
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 11
+                    Value "[確定]"
+                End Literal
+
+            End Icon
+
+            Icon NO_ICON
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 25
+                    Value "[取消]"
+                End Literal
+
+            End Icon
+
+            Literal Rectangle
+                Line 1	Column 1
+                Line 7	Column 40
+            End Literal
+
+            Literal Text
+                Line 2
+                Column 3
+                Value "實際製程"
+            End Literal
+
+            Literal Text
+                Line 3
+                Column 3
+                Value "標準製程"
+            End Literal
+/*
+            Literal Text
+                Line 4
+                Column 3
+                Value "成品厚度"
+            End Literal
+*/
+            Field PRODUCT_CODE
+                Line 2
+                Column 12
+                Output Picture X'-'
+                Protected
+            End Field
+/*
+            Field COIL_THICK
+                Line 4
+                Column 12
+                Output Picture 9R9.99
+                Protected
+            End Field
+*/
+        End Panel
+
+
+        Panel COIL_FILTER_PANEL
+            Viewport VP_3_28
+            Remove
+            Function Response ESC_KEY
+                Let COIL_FILTER = "0"
+                Return
+                    " FQUI"
+            End Response
+
+            Icon FILTER1
+                Function Response RIGHT_ARROW
+                    Let COIL_FILTER = "20"
+                    Display
+                        COIL_FILTER2_PANEL
+                    Activate
+                        Panel COIL_FILTER2_PANEL
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "20"
+                    Display
+                        COIL_FILTER2_PANEL
+                    Activate
+                        Panel COIL_FILTER2_PANEL
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+                End Response                          
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 2
+                    Column 2
+                    Value "1. 200系鋼種  -->"
+                End Literal
+
+            End Icon
+
+            Icon FILTER2
+
+                Function Response RIGHT_ARROW
+                    Let COIL_FILTER = "30"
+                    Display
+                        COIL_FILTER3_PANEL
+                    Activate
+                        Panel COIL_FILTER3_PANEL
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "30"
+                    Display
+                        COIL_FILTER3_PANEL
+                    Activate
+                        Panel COIL_FILTER3_PANEL
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+                End Response 
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 3
+                    Column 2
+                    Value "2. 300系鋼種  -->"
+                End Literal
+
+            End Icon
+
+            Icon FILTER3
+
+                Function Response RIGHT_ARROW
+                    Let COIL_FILTER = "40"
+                    Display
+                        COIL_FILTER2_PANEL
+                    Activate
+                        Panel COIL_FILTER4_PANEL
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "40"
+                    Display
+                        COIL_FILTER4_PANEL
+                    Activate
+                        Panel COIL_FILTER4_PANEL
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 4
+                    Column 2
+                    Value "3. 400系鋼種  -->"
+                End Literal
+
+            End Icon
+
+
+            Icon FILTER4
+
+                Function Response RIGHT_ARROW
+                    Let COIL_FILTER = "51"
+/*
+                    Display
+                        COIL_FILTER2_PANEL
+                    Activate
+                        Panel COIL_FILTER4_PANEL
+*/
+
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "51"
+/*
+                    Display
+                        COIL_FILTER2_PANEL
+                    Activate
+                        Panel COIL_FILTER4_PANEL
+*/
+                    Deactivate
+                        Panel COIL_FILTER_PANEL
+
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 5
+                    Column 2
+                    Value "4. 重酸或其它 -->"
+                End Literal
+
+            End Icon
+
+
+            Literal Rectangle
+                Line 1	Column 1
+                Line 6	Column 25
+            End Literal
+
+        End Panel
+
+        Panel COIL_FILTER3_PANEL
+            Viewport VP_3_28
+            Remove
+            Function Response ESC_KEY
+                Let COIL_FILTER = "00"
+                Deactivate
+                    Panel COIL_FILTER3_PANEL
+                Display
+                    COIL_FILTER_PANEL
+                Activate
+                    Panel COIL_FILTER_PANEL
+            End Response
+ 
+            Function Response LEFT_ARROW
+                Let COIL_FILTER = "30"
+                Display
+                    COIL_FILTER_PANEL
+                Activate
+                    Panel COIL_FILTER_PANEL
+                Remove
+                Deactivate
+                    Panel COIL_FILTER3_PANEL
+            End Response                                    
+
+ 
+ 
+            Icon FILTER1
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "31"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 2
+                    Column 2   
+                    Value "1. 米呎寬度               "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER2
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "32"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 3
+                    Column 2
+                    Value "2. 四呎寬度               "
+                End Literal
+ 
+            End Icon         
+ 
+            Icon FILTER3
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "33"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 4
+                    Column 2
+                    Value "3. 五呎寬度               "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER4
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "34"    
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 5
+                    Column 2
+                    Value "4. 生產預排排程料(A_廠)   "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER5
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "35"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 2
+                    Value "5. 生產預排排程料(B_廠)   "
+                End Literal
+ 
+            End Icon
+ 
+
+            Icon FILTER6
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "36"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 7
+                    Column 2
+                    Value "6. 生產預排排程料(C_廠)"
+                End Literal
+ 
+            End Icon
+
+            Icon FILTER7
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "37"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 2
+                    Value "7. 生產預排待搬運量"
+                End Literal
+ 
+            End Icon
+
+            Literal Rectangle
+                Line 1  Column 1
+                Line 9  Column 28
+            End Literal
+ 
+        End Panel
+
+        Panel COIL_FILTER2_PANEL
+            Viewport VP_3_28
+            Remove
+            Function Response ESC_KEY
+                Let COIL_FILTER = "00"
+                Deactivate
+                    Panel COIL_FILTER2_PANEL
+                Display
+                    COIL_FILTER_PANEL
+                Activate
+                    Panel COIL_FILTER_PANEL
+            End Response
+ 
+            Function Response LEFT_ARROW
+                Let COIL_FILTER = "20"
+                Display
+                    COIL_FILTER_PANEL
+                Activate
+                    Panel COIL_FILTER_PANEL
+                Remove
+                Deactivate
+                    Panel COIL_FILTER2_PANEL
+            End Response                                    
+
+ 
+ 
+            Icon FILTER1
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "21"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 2
+                    Column 2   
+                    Value "1. 米呎寬度               "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER2
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "22"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 3
+                    Column 2
+                    Value "2. 四呎寬度               "
+                End Literal
+ 
+            End Icon         
+ 
+            Icon FILTER3
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "23"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 4
+                    Column 2
+                    Value "3. 五呎寬度               "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER4
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "24"    
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 5
+                    Column 2
+                    Value "4. 生產預排排程料(A_廠)   "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER5
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "25"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 2
+                    Value "5. 生產預排排程料(B_廠)   "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER6
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "26"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 7
+                    Column 2
+                    Value "6. 生產預排排程料(C_廠)   "
+                End Literal
+ 
+            End Icon
+
+            Icon FILTER7
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "27"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 2
+                    Value "7. 生產預排待搬運量"
+                End Literal
+ 
+            End Icon
+
+            Literal Rectangle
+                Line 1  Column 1
+                Line 9  Column 28
+            End Literal
+ 
+        End Panel        
+
+        Panel COIL_FILTER4_PANEL
+            Viewport VP_3_28
+            Remove
+            Function Response ESC_KEY
+                Let COIL_FILTER = "00"
+                Deactivate
+                    Panel COIL_FILTER4_PANEL
+                Display
+                    COIL_FILTER_PANEL
+                Activate
+                    Panel COIL_FILTER_PANEL
+            End Response
+ 
+            Function Response LEFT_ARROW
+                Let COIL_FILTER = "40"
+                Display
+                    COIL_FILTER_PANEL
+                Activate
+                    Panel COIL_FILTER_PANEL
+                Remove
+                Deactivate
+                    Panel COIL_FILTER4_PANEL
+            End Response                                    
+
+ 
+ 
+            Icon FILTER1
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "41"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 2
+                    Column 2   
+                    Value "1. 米呎寬度               "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER2
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "42"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 3
+                    Column 2
+                    Value "2. 四呎寬度               "
+                End Literal
+ 
+            End Icon         
+ 
+            Icon FILTER3
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "43"
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 4
+                    Column 2
+                    Value "3. 五呎寬度               "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER4
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "44"    
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 5
+                    Column 2
+                    Value "4. 生產預排排程料(A_廠)"
+                End Literal
+ 
+            End Icon
+ 
+
+            Icon FILTER5
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "45"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 2
+                    Value "5. 生產預排排程料(B_廠)   "
+                End Literal
+ 
+            End Icon
+ 
+            Icon FILTER6
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "46"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 7
+                    Column 2
+                    Value "6. 生產預排排程料(C_廠)   "
+                End Literal
+ 
+            End Icon
+
+            Icon FILTER7
+                Function Response SELECT_KEY
+                    Let COIL_FILTER = "47"
+                    Return
+                        " FEXI"
+                End Response   
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 2
+                    Value "7. 生產預排待搬運量"
+                End Literal
+ 
+            End Icon
+
+            Literal Rectangle
+                Line 1  Column 1
+                Line 9  Column 28
+            End Literal
+ 
+        End Panel                
+
+
+        Panel DATE_RANGE_PAN
+            Viewport VP_3_40
+            Remove
+            Literal Rectangle
+                Line 1  Column 1
+                Line 7  Column 40
+            End Literal
+ 
+            Literal Text
+                Line 2
+                Column 14
+                Value "請輸入日期範圍:"
+            End Literal
+
+            Field DATE_1
+                Line 4
+                Column 8
+                Function Response NEXT ITEM
+                    Position To Next Item
+                End Response
+ 
+                Active Highlight
+                    Reverse
+                Output Picture XXX'/'XX'/'XX
+            End Field
+ 
+            Field DATE_2
+                Line 4
+                Column 25
+                Function Response NEXT ITEM
+                    Position To Next Item
+                End Response
+ 
+                Active Highlight
+                    Reverse
+                Output Picture XXX'/'XX'/'XX
+
+            End Field
+ 
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 11
+                    Value "[確定]"
+                End Literal
+ 
+            End Icon
+
+            Icon NO_ICON
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+ 
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 25
+                    Value "[取消]"
+                End Literal
+ 
+            End Icon
+ 
+            Literal Text
+                Line 4
+                Column 20
+                Value "? "
+            End Literal
+ 
+        End Panel
+
+
+
+        Panel DATE_STEEL_PAN
+            Viewport VP_3_42
+            Remove
+            Literal Rectangle
+                Line 1  Column 1
+                Line 9  Column 40
+            End Literal
+ 
+            Literal Text
+                Line 2
+                Column 10
+                Value "<<輸入資料範圍>>"
+            End Literal
+
+            Literal Text
+                Line 3
+                Column 2
+                Value "______________________________________"
+            End Literal
+
+            Literal Text
+                Line 4
+                Column 03
+                Value "起始日期 (YYY/MM/DD):"
+            End Literal
+
+            Field DATE_1
+                Line 4
+                Column 24
+                Function Response NEXT ITEM
+                    Position To Next Item
+                End Response
+ 
+                Active Highlight
+                    Reverse
+                Output Picture XXX'/'XX'/'XX
+            End Field
+ 
+
+            Literal Text
+                Line 5
+                Column 03
+                Value "結束日期 (YYY/MM/DD):"
+            End Literal
+
+            Field DATE_2
+                Line 5
+                Column 24
+                Function Response NEXT ITEM
+                    Position To Next Item
+                End Response
+ 
+                Active Highlight
+                    Reverse
+                Output Picture XXX'/'XX'/'XX
+            End Field
+
+            Literal Text
+                Line 6
+                Column 03
+                Value "鋼種系別 (2/3/4/@)  :"
+            End Literal
+
+            Field STEEL_CODE
+                Line 6
+                Column 24
+                Function Response NEXT ITEM
+                    Position To Next Item
+                End Response
+ 
+                Active Highlight
+                    Reverse
+                Output Picture X
+		Require ((STEEL_CODE = "2") OR (STEEL_CODE = "3") OR
+                    (STEEL_CODE = "4") OR (STEEL_CODE = "@")) 
+            End Field
+
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 11
+                    Value "[確定]"
+                End Literal
+ 
+            End Icon
+
+            Icon NO_ICON
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+ 
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 25
+                    Value "[取消]"
+                End Literal
+ 
+            End Icon
+ 
+ 
+        End Panel
+
+
+
+
+        Panel PROD_ID_PANEL
+            Viewport VP_3_28
+            Remove
+            Literal Rectangle
+                Line 1	Column 1
+                Line 7	Column 28
+            End Literal
+
+            Field PROD_ID
+                Line 4
+                Column 9
+                Function Response UP_ARROW
+                    Let PROD_ID = L_PROD_ID
+                End Response
+
+                Display
+                    Reverse
+                Output Picture CCC'-'CCCCC'-'CCC
+                Uppercase
+            End Field
+
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Let L_PROD_ID = PROD_ID
+                    Return
+                        " FEXI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 5
+                    Value "[確定]"
+                End Literal
+
+            End Icon
+
+            Icon NO_ICON
+                /*                Literal Rectangle
+                    Line 3	Column 26
+                    Line 5	Column 33
+                End Literal */
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 6
+                    Column 19
+                    Value "[取消]"
+                End Literal
+
+            End Icon
+
+            Literal Text
+                Line 2
+                Column 9
+                Value "輸入鋼捲編號"
+            End Literal
+
+        End Panel
+
+
+        Panel YES_NO_PANEL
+            Viewport VP_3_40
+            Remove
+            Function Response LEFT_ARROW
+                Position To Left Item
+            End Response
+
+            Function Response RIGHT_ARROW
+                Position To Right Item
+            End Response
+
+            Literal Rectangle
+                Line 1	Column 1
+                Line 7	Column 40
+            End Literal
+
+            Field PROMPT_STRING
+                Line 3
+                Column 2
+                Protected
+            End Field
+
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 5
+                    Column 12
+                    Value "[是]"
+                End Literal
+
+            End Icon
+
+            Icon NO_ICON
+                /*                Literal Rectangle
+                    Line 3	Column 26
+                    Line 5	Column 33
+                End Literal */
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 5
+                    Column 26
+                    Value "[否]"
+                End Literal
+
+            End Icon
+
+        End Panel
+
+
+        Panel NOTICE_PANEL
+            Viewport NOTICT_VP
+            Remove
+            Literal Rectangle
+                Line 1	Column 1
+                Line 5	Column 76
+            End Literal
+
+            Field PROMPT2
+                Line 2
+                Column 2
+                Display
+                    Bold
+                Output Picture X(74)
+                Protected
+            End Field
+
+            Icon NT_ICON
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response ESC_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response NEXT ITEM
+                    Return
+                        " FQUI"
+                End Response
+
+                Active Highlight
+                    Reverse
+                Literal Text
+                    Line 4
+                    Column 36
+                    Value "< OK >"
+                End Literal
+
+            End Icon
+
+        End Panel
+
+
+        Panel LOG_COND
+            Viewport VP_5_40
+            Remove
+            Literal Text
+                Line 2
+                Column 7
+                Value "<< Set search conditions >>"
+            End Literal
+
+            Literal Rectangle
+                Line 1	Column 1
+                Line 9	Column 40
+            End Literal
+
+            Literal Text
+                Line 4
+                Column 7
+                Value "Message type :"
+            End Literal
+
+            Literal Text
+                Line 5
+                Column 7
+                Value "Message ID   :"
+            End Literal
+
+            Literal Text
+                Line 6
+                Column 7
+                Value "String       :"
+            End Literal
+
+            Field LOG_TYPE
+                Line 4
+                Column 23
+                Active Highlight
+                    Reverse
+                Output Picture X
+                Uppercase
+            End Field
+
+            Field LOG_ID
+                Line 5
+                Column 23
+                Active Highlight
+                    Reverse
+                Output Picture 99R9
+                Justification Right
+            End Field
+
+            Field LOG_STR
+                Line 6
+                Column 23
+                Active Highlight
+                    Reverse
+                Output Picture X(11)
+            End Field
+
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 11
+                    Value "[確定]"
+                End Literal
+
+            End Icon
+
+            Icon NO_ICON
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 25
+                    Value "[取消]"
+                End Literal
+
+            End Icon
+
+        End Panel
+
+
+        Panel NO_OF_COIL_PAN
+            Viewport VP_5_40
+            Remove
+            Field SCHD_NO
+                Line 4
+                Column 21
+                Active Highlight
+                    Reverse
+                Output Picture C'-'CC'-'C
+            End Field
+
+            Field NO_OF_COIL
+                Line 5
+                Column 21
+                Active Highlight
+                    Reverse
+                Output Picture 99S9
+                Justification Right
+            End Field
+
+            Field SEQ
+                Line 6
+                Column 21
+                Active Highlight
+                    Reverse
+                Output Picture 99S9
+                Justification Right
+            End Field
+
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 11
+                    Value "[確定]"
+                End Literal
+
+            End Icon
+
+            Icon NO_ICON
+                /*                Literal Rectangle
+                    Line 3	Column 26
+                    Line 5	Column 33
+                End Literal */
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 25
+                    Value "[取消]"
+                End Literal
+
+            End Icon
+
+            Literal Text
+                Line 2
+                Column 12
+                Value "<< 新增軋延排程 >>"
+            End Literal
+
+            Literal Text
+                Line 5
+                Column 6
+                Value "鋼捲數量     :"
+            End Literal
+
+            Literal Text
+                Line 6
+                Column 6
+                Value "流水序號初值 :"
+            End Literal
+
+            Literal Text
+                Line 5
+                Column 26
+                Value "(0表全選)"
+            End Literal
+
+            Literal Rectangle
+                Line 1	Column 1
+                Line 9	Column 40
+            End Literal
+
+            Literal Text
+                Line 4
+                Column 6
+                Value "排程序號     :"
+            End Literal
+
+        End Panel
+
+
+        Panel PDO_KEY_PANEL
+            Viewport VP_4_40
+            Remove
+            Field PROD_ID
+                Line 4
+                Column 20
+                Active Highlight
+                    Reverse
+                Output Picture CCC'-'CCCCC'-'CCC
+                Uppercase
+            End Field
+
+            Field SCHD_NO
+                Line 5
+                Column 20
+                Active Highlight
+                    Reverse
+/*                Output Picture C'-'CC'-'C */
+                Output Picture X'-'XX'-'X
+            End Field
+
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Let L_PROD_ID = PROD_ID
+                    Return
+                        " FEXI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 7
+                    Column 11
+                    Value "[確定]"
+                End Literal
+
+            End Icon
+
+            Icon NO_ICON
+                /*                Literal Rectangle
+                    Line 3	Column 26
+                    Line 5	Column 33
+                End Literal */
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 7
+                    Column 25
+                    Value "[取消]"
+                End Literal
+
+            End Icon
+
+            Literal Rectangle
+                Line 1	Column 1
+                Line 8	Column 40
+            End Literal
+
+            Literal Text
+                Line 2
+                Column 10
+                Value "輸入鋼捲編號及軋延序號"
+            End Literal
+
+            Literal Text
+                Line 4
+                Column 9
+                Value "鋼捲編號 :"
+            End Literal
+
+            Literal Text
+                Line 5
+                Column 9
+                Value "軋延序號 :"
+            End Literal
+
+        End Panel
+
+	Panel PLAN_QUERY_PANEL
+            Viewport PLAN_QUERY_VP
+            Display
+                %Keypad_Unchanged
+ 
+            Remove
+ 
+            Literal Rectangle
+                Line 4  Column 1
+                Line 9 Column 35
+            End Literal
+ 
+            Literal Text
+                Line 5
+                Column 5
+                Value "輸入查詢月份:"
+            End Literal
+
+	    Field QUERY_YEAR
+                Line 5
+                Column 19
+                Active Highlight
+                    Reverse
+                Output Picture XXX
+            End Field
+ 
+            Literal Text
+                Line 5
+                Column 23
+                Value "年"
+            End Literal
+ 
+            Field QUERY_MONTH
+                Line 5
+                Column 26
+                Active Highlight
+                    Reverse
+                Output Picture XX
+            End Field
+
+	     Literal Text
+                Line 5
+                Column 29
+                Value "月"
+            End Literal
+ 
+            Icon YES_ICON
+                Function Response RIGHT_ARROW
+                    Position To Right Item
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Return
+                        " FEXI"
+                End Response
+ 
+                Function Response KP_ENTER_KEY
+                    Return
+                        " FEXI"
+                End Response
+		Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 9
+                    Value "[確定]"
+                End Literal
+ 
+            End Icon
+ 
+            Icon NO_ICON
+                Function Response LEFT_ARROW
+                    Position To Left Item
+                End Response
+ 
+                Function Response SELECT_KEY
+                    Return
+                        " FQUI"
+                End Response
+
+	    Function Response KP_ENTER_KEY
+                    Return
+                        " FQUI"
+                End Response
+ 
+                Active Highlight
+                    Bold
+                    Reverse
+                Literal Text
+                    Line 8
+                    Column 23
+                    Value "[取消]"
+                End Literal
+            End Icon
+	End Panel
+
+    End Layout
+End Form
