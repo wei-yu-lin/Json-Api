@@ -1,3 +1,4 @@
+
 	SUBROUTINE	DH$_PDO_TO_COIL
 	1		(
 	1		PDO
@@ -56,6 +57,7 @@ C	-----------------------------------------------------------------------
 	CHARACTER*20    BCODE,Z_CODE,ACTL_PCODE
 	CHARACTER*10	CCODE
 	INTEGER*4       L,M,N,CLEN
+	INTEGER*4   CCC,PPP
 
 C	function
 C	-----------------------------------------------------------------------
@@ -76,7 +78,7 @@ C	-----------------------------------------------------------------------
 C					CODE
 C	-----------------------------------------------------------------------
 	IF (PDO.TRANSFER .EQ. 'Y') THEN
-	   CALL DH_NOTICE('è½‰æ›ç¢¼å·²ç¶“æ˜¯ Y')
+	   CALL DH_NOTICE('Âà´«½X¤w¸g¬O Y')
 	   RETURN
 	ENDIF
 
@@ -95,19 +97,19 @@ C	-----------------------------------------------------------------------
 	         MOTHER_WEIGHT = PCM_WEIGHT ! use no split weight for running_mode of input weight
 	    ELSE
 	        CALL DH_NOTICE(
-	1        'æœ¬è£½ç¨‹ä¸ç‚ºCAPæˆ–IC_CODE<>32/46:'
-	1	//CURR_STATION//'-'//IC_CODE//' ä¸å¯çµè½‰PDO')
+	1        '¥»»sµ{¤£¬°CAP©ÎIC_CODE<>32/46:'
+	1	//CURR_STATION//'-'//IC_CODE//' ¤£¥iµ²ÂàPDO')
 		RETURN
 	    ENDIF
 	ELSE
-C       --STEP2.é‹¼æ²ç·¨è™Ÿç¸®æ¸›ä¸€ç¢¼å†æœå°‹--
+C       --STEP2.¿û±²½s¸¹ÁY´î¤@½X¦A·j´M--
 	   CALL GR_ALLTRIM ( PDO.COIL_NO , CUT )
 	   IF (CUT .LE. 8) THEN
-	        CALL DH_NOTICE('COIL_NO æ¸›ä¸€ç¢¼ æ‰¾ä¸åˆ°æœ¬è£½ç¨‹,ä¸å¯çµè½‰PDO')
+	        CALL DH_NOTICE('COIL_NO ´î¤@½X §ä¤£¨ì¥»»sµ{,¤£¥iµ²ÂàPDO')
 		RETURN 
 	   ELSE
 	      CALL DH_INTERNAL_MSG
-	1	(' COIL_NO æ¸›ä¸€ç¢¼ ='//PDO.COIL_NO(1:CUT-1)//'æœå°‹ä¸­...!',2)
+	1	(' COIL_NO ´î¤@½X ='//PDO.COIL_NO(1:CUT-1)//'·j´M¤¤...!',2)
 
 	        CALL CPS_PCMB020M_SEARCH_NEW
 	1  	( PDO.COIL_NO(1:CUT-1)//'   ',
@@ -121,16 +123,16 @@ C       --STEP2.é‹¼æ²ç·¨è™Ÿç¸®æ¸›ä¸€ç¢¼å†æœå°‹--
 	            IF ((CURR_STATION .EQ. 'CAP' ) .AND. 
 	1	       ((IC_CODE .EQ. '32' ) .OR. (IC_CODE .EQ. '46'))) THEN
 	               CALL DH_INTERNAL_MSG
-	1	       (' COIL_NO æ¸›ä¸€ç¢¼ æ‰¾åˆ°æœ¬è£½ç¨‹=CAPä¸”ç‹€æ…‹=32/46...!',2)
+	1	       (' COIL_NO ´î¤@½X §ä¨ì¥»»sµ{=CAP¥Bª¬ºA=32/46...!',2)
 		ELSE
 	              CALL DH_NOTICE
-	1               ('COIL_NO æ¸›ä¸€ç¢¼,æœ¬è£½ç¨‹ä¸ç‚ºCAPæˆ–IC_CODE<>32/46:'
-	1		//CURR_STATION//'-'//IC_CODE//' ä¸å¯çµè½‰')
+	1               ('COIL_NO ´î¤@½X,¥»»sµ{¤£¬°CAP©ÎIC_CODE<>32/46:'
+	1		//CURR_STATION//'-'//IC_CODE//' ¤£¥iµ²Âà')
 		      RETURN
 		    ENDIF
-		ELSE  ! åˆ¤æ–·åŒä¸€ä»£å…„å¼Ÿé‹¼æ²æ˜¯å¦å­˜åœ¨ä¸”ä¸Šè£½ç¨‹ç‚ºCAP
+		ELSE  ! §PÂ_¦P¤@¥N¥S§Ì¿û±²¬O§_¦s¦b¥B¤W»sµ{¬°CAP
 	           CALL DH_INTERNAL_MSG
-	1	   (' åˆ¤æ–·åŒä¸€ä»£å…„å¼Ÿé‹¼æ²æ˜¯å¦å­˜åœ¨ä¸”ä¸Šè£½ç¨‹ç‚ºCAPä¸”ç‹€æ…‹=32/46...!',2)
+	1	   (' §PÂ_¦P¤@¥N¥S§Ì¿û±²¬O§_¦s¦b¥B¤W»sµ{¬°CAP¥Bª¬ºA=32/46...!',2)
         	   CALL CPS_PCMB020M_BROTHER
 	1  	      ( PDO.COIL_NO,
 	1	      'CAP',		! CHECK LINE
@@ -138,11 +140,11 @@ C       --STEP2.é‹¼æ²ç·¨è™Ÿç¸®æ¸›ä¸€ç¢¼å†æœå°‹--
 	1	      SQLCOD)
 		   IF ( SQLCOD .EQ. 0 ) THEN
 	           CALL DH_INTERNAL_MSG
-	1	   (' æ‰¾åˆ°åŒä¸€ä»£å…„å¼Ÿé‹¼æ²='//BROTHER_COIL_NO
-	1	      //'å…¶ä¸Šè£½ç¨‹ç‚ºCAP é–‹å§‹çµè½‰!',2 )
+	1	   (' §ä¨ì¦P¤@¥N¥S§Ì¿û±²='//BROTHER_COIL_NO
+	1	      //'¨ä¤W»sµ{¬°CAP ¶}©lµ²Âà!',2 )
 		   ELSE
 	              CALL DH_NOTICE
-	1               ('æ‰¾ä¸åˆ°åŒä¸€ä»£å…„å¼Ÿé‹¼æ²'//BROTHER_COIL_NO//',ä¸”ä¸Šè£½ç¨‹ç‚ºCAP, ä¸å¯çµè½‰!')
+	1               ('§ä¤£¨ì¦P¤@¥N¥S§Ì¿û±²'//BROTHER_COIL_NO//',¥B¤W»sµ{¬°CAP, ¤£¥iµ²Âà!')
 		      RETURN
 		   ENDIF
 		ENDIF
@@ -152,7 +154,7 @@ C	CALL DH_WORKING_OUTPUT(1)
 
 	
 
-CD	å‡è¨­æ²’æœ‰åˆ†åˆ‡
+CD	°²³]¨S¦³¤À¤Á
 	DIVIDE_YN = 'N'
 C	modi by yu68187 use pdo directly
 	IF ( PDO.COIL_NO .NE. PDO.MOTHER_COIL_NO ) DIVIDE_YN = 'Y'
@@ -165,18 +167,18 @@ C	modi by yu68187 use pdo directly
 	DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
 	
 	
-CD	if é‹¼æ²ç·¨è™Ÿä¸åœ¨é‹¼æ²è³‡æ–™æª”ä¸­
+CD	if ¿û±²½s¸¹¤£¦b¿û±²¸ê®ÆÀÉ¤¤
 	IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
 
-C	   DIVIDE_YN = 'Y'				! è¢«åˆ†åˆ‡
+C	   DIVIDE_YN = 'Y'				! ³Q¤À¤Á
 
-CD	   if é‹¼æ²ç·¨è™Ÿè¶…éŽ8ç¢¼=>æª¢æŸ¥æ˜¯å¦ç‚ºè¢«åˆ†åˆ‡ä¹‹é‹¼æ²
+CD	   if ¿û±²½s¸¹¶W¹L8½X=>ÀË¬d¬O§_¬°³Q¤À¤Á¤§¿û±²
 	   CALL GR_ALLTRIM ( COIL.COIL_ID , CUT )
 	   IF (CUT .GT. 8) THEN
 	      COIL.COIL_ID(CUT:CUT) = ' '
 	      DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
 
-CD            åˆ†åˆ‡æ™‚,å£“ä¸‹çŽ‡éœ€å–æ¯é‹¼æ² 89/07/24
+CD            ¤À¤Á®É,À£¤U²v»Ý¨ú¥À¿û±² 89/07/24
               IF ( (TOTAL_REDUCTION .LE. 0) .AND.
 	1          (COIL.TOTAL_REDUCTION .LE. 100) ) THEN
                 TOTAL_REDUCTION = COIL.TOTAL_REDUCTION
@@ -185,12 +187,12 @@ CD            åˆ†åˆ‡æ™‚,å£“ä¸‹çŽ‡éœ€å–æ¯é‹¼æ² 89/07/24
 	      IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
 		 DH_ITEM_LIST.STATUS = COIL_CUT ( COIL.COIL_ID )
 		 IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
-		    CALL DH_NOTICE ('åˆ†åˆ‡å‹•ä½œå¤±æ•—')
+		    CALL DH_NOTICE ('¤À¤Á°Ê§@¥¢±Ñ')
 		    RETURN
 		 ENDIF
 	      ENDIF
 
-C       ---53.å» å€--
+C       ---53.¼t°Ï--
 		COIL.FACTORY = 'A'
 
 	      DH_ITEM_LIST.STATUS = COIL_RECALL
@@ -201,31 +203,31 @@ C       ---53.å» å€--
 	1			COIL.TOTAL_REDUCTION
 	1			)
 	      IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
-			WRITE (6,*) 'ä¸åœ¨åˆ†åˆ‡æš«å­˜æª”',DH_ITEM_LIST.STATUS
+			WRITE (6,*) '¤£¦b¤À¤Á¼È¦sÀÉ',DH_ITEM_LIST.STATUS
 				CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
 			RETURN
 	      ENDIF
 	      CALL DH_NOTICE ('COIL_RECALL called ! check...')
 
 	   ELSE
-	      CALL DH_INTERNAL_MSG(COIL.COIL_ID//'ä¸åœ¨é‹¼æ²è³‡æ–™æª”',2)
+	      CALL DH_INTERNAL_MSG(COIL.COIL_ID//'¤£¦b¿û±²¸ê®ÆÀÉ',2)
 	      CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
 	      RETURN
 	   ENDIF
-CD	   å†ç¢ºå®šPDOä¹‹é‹¼æ²ç·¨è™Ÿæ˜¯å¦å·²å­˜åœ¨æ–¼é‹¼æ²è³‡æ–™æª”
+CD	   ¦A½T©wPDO¤§¿û±²½s¸¹¬O§_¤w¦s¦b©ó¿û±²¸ê®ÆÀÉ
 	   COIL.COIL_ID = PDO.COIL_NO
 	   DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
-CD	   if é‹¼æ²ç·¨è™Ÿä¸åœ¨é‹¼æ²è³‡æ–™æª”ä¸­
+CD	   if ¿û±²½s¸¹¤£¦b¿û±²¸ê®ÆÀÉ¤¤
 	   IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
-	      CALL DH_INTERNAL_MSG('ä¸åœ¨é‹¼æ²è³‡æ–™æª”ä¸­',3)
+	      CALL DH_INTERNAL_MSG('¤£¦b¿û±²¸ê®ÆÀÉ¤¤',3)
 	      CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
 	      RETURN
 	   ENDIF
 	ENDIF
 
 	
-CD	20200130 ç”Ÿè¨ˆéƒ¨å°é¦¬éœ€æ±‚ BYæž—è‚²ç¶­
-	  ORDB.ORDER_NO   = COIL.CB_FIRST_ORD_NO(1:7) !æ”¹å–PCMB100M
+CD	20200130 ¥Í­p³¡¤p°¨»Ý¨D BYªL¨|ºû
+	  ORDB.ORDER_NO   = COIL.CB_FIRST_ORD_NO(1:7) !§ï¨úPCMB100M
 	  ORDB.ORDER_ITEM = COIL.CB_FIRST_ORD_NO(8:9)
 	  DH_ITEM_LIST.STATUS = PCM0100M_R ( ORDB )
 	  L4ORD.ORDER_NO   = COIL.CB_FIRST_ORD_NO(1:7)
@@ -239,49 +241,49 @@ C	  CALL CAP_PDI_R ( PDI )
 	IF (COIL.CURR_STATION .NE. 'CAP') THEN
 	   IF ((COIL.PREV_STATION .EQ. 'CAP') .AND.
 	1      (COIL.IC_CODE .EQ. '32')) THEN
-	      CALL DH_NOTICE('Msg 77: æœ¬è£½ç¨‹ä¸æ˜¯ CAP ,'//
-	1		  'è«‹è‡³é‹¼æ²è³‡æ–™æª”æ›´æ”¹è£½ç¨‹è·¯å¾‘')
+	      CALL DH_NOTICE('Msg 77: ¥»»sµ{¤£¬O CAP ,'//
+	1		  '½Ð¦Ü¿û±²¸ê®ÆÀÉ§ó§ï»sµ{¸ô®|')
 	   ELSE IF ((COIL.PREV_STATION .EQ. 'CAP') .AND.
 	1           (INDEX('46.13',COIL.IC_CODE) .GT. 0)) THEN
-	      CALL DH_NOTICE('Msg 88: é‹¼æ²å·²æŽ’å…¥ä¸‹è£½ç¨‹ ,'//
-	1		  'ç„¡æ³•æ›´æ”¹é‹¼æ²è³‡æ–™æª”')
+	      CALL DH_NOTICE('Msg 88: ¿û±²¤w±Æ¤J¤U»sµ{ ,'//
+	1		  'µLªk§ó§ï¿û±²¸ê®ÆÀÉ')
 	   ELSE IF (COIL.PREV_STATION .NE. 'CAP') THEN
-	      CALL DH_NOTICE('Msg 99: é‹¼æ²å·²æ–¼ä¸‹è£½ç¨‹ç”¢å‡º ,'//
-	1		  'ç„¡æ³•æ›´æ”¹é‹¼æ²è³‡æ–™æª”')
+	      CALL DH_NOTICE('Msg 99: ¿û±²¤w©ó¤U»sµ{²£¥X ,'//
+	1		  'µLªk§ó§ï¿û±²¸ê®ÆÀÉ')
 	   ENDIF
 
-CD	   è¿”å›ž
+CD	   ªð¦^
 	   RETURN
 	ENDIF
  
-C       ---1.é‹¼æ²ç·¨è™Ÿ---
-C	ä¸è®Š
-C       ---2.é‹¼èƒšç·¨è™Ÿ---
-C	ä¸è®Š
-C       ---3.é‹¼ç¨®ç·¨è™Ÿ---
-C	ä¸è®Š
-C       ---4.é‹¼ç¨®é¡žåˆ¥---
-C	ä¸è®Š
-C       ---5.é‹¼ç¨®ç³»åˆ—---
-C	ä¸è®Š
-C	---6.é‹¼æ²åŽšåº¦--- 
+C       ---1.¿û±²½s¸¹---
+C	¤£ÅÜ
+C       ---2.¿û­F½s¸¹---
+C	¤£ÅÜ
+C       ---3.¿ûºØ½s¸¹---
+C	¤£ÅÜ
+C       ---4.¿ûºØÃþ§O---
+C	¤£ÅÜ
+C       ---5.¿ûºØ¨t¦C---
+C	¤£ÅÜ
+C	---6.¿û±²«p«×--- 
 	IF (PDO.ACTUAL_THICKNESS .GT. 0) THEN
 	   COIL.COIL_THICK = PDO.ACTUAL_THICKNESS
 	ENDIF
-C   ---7.é‹¼æ²å¯¬åº¦---
+C   ---7.¿û±²¼e«×---
 	IF (PDO.ACTUAL_WIDTH .GT. 0) THEN
 	   COIL.COIL_WIDTH = PDO.ACTUAL_WIDTH
 	ENDIF
-C   ---8.é‹¼æ²é‡é‡---
+C   ---8.¿û±²­«¶q---
 	IF (PDO.ACTUAL_WEIGHT .GT. 0) THEN
 	   COIL.COIL_WT = PDO.ACTUAL_WEIGHT
 	ELSE IF (PDO.THEO_WEIGHT .GT. 0) THEN
 	   COIL.COIL_WT = PDO.THEO_WEIGHT
 	ENDIF
-C   ---9.é‹¼æ²å…§å¾‘---
+C   ---9.¿û±²¤º®|---
 	COIL.INNER_DIAM = 610
-C 	---10.é‹¼æ²å¤–å¾‘---
-C	è¨ˆç®—å¤–å¾‘
+C 	---10.¿û±²¥~®|---
+C	­pºâ¥~®|
 	COIL.OUTER_DIAM = OUTER_DIAMETER
 	1		(
 	1		COIL.STEEL_GRADE,
@@ -289,12 +291,13 @@ C	è¨ˆç®—å¤–å¾‘
 	1		COIL.COIL_WIDTH,
 	1		610
 	1		)
-C   ---11.å“ç®¡åˆ¤ç´š---
+C   ---11.«~ºÞ§P¯Å---
 	COIL.CLASS_CODE = PDO.CLASS_CODE
-C   ---12.ç›®å‰å„²ä½---
+C   ---12.¥Ø«eÀx¦ì---
 	COIL.STORAGE = ' '
 
-C 	---15.å¯¦éš›è£½ç¨‹ç·¨è™Ÿ---
+	ACTL_PCODE = ''
+C 	---15.¹ê»Ú»sµ{½s¸¹---
 C	15.1
 	IF (PDO.GRINDING_PARM .LE. ' ') THEN
 	  IF (INDEX('RF',PDO.CLASS_CODE) .GT. 0) THEN
@@ -350,9 +353,9 @@ C     15.3  (1).
 C  	    (2).
 	     IF (PDO.RUNNING_MODE_CAP(3:3) .EQ. '1') THEN
 			IF ((ORDB.COIL_IN_DIAM .EQ. 508) .AND.
-	1	   (PDO.ACTUAL_THICKNESS .LE. 2)) THEN				
+	1	   (PDO.ACTUAL_THICKNESS .LE. 2)) THEN			        
 				ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'T'//Z_CODE 
-			ELSEIF ((ORDB.COIL_IN_DIAM .EQ. 508) .AND.			
+			ELSEIF ((ORDB.COIL_IN_DIAM .EQ. 508) .AND.	        	
 	1	  	((PDO.ACTUAL_THICKNESS .GT. 2) .AND. (PDO.ACTUAL_THICKNESS .LE. 3))) THEN			
 				ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'Y'//Z_CODE 
 			ENDIF
@@ -360,45 +363,50 @@ C  	    (2).
 		 	ACTL_PCODE = COIL.ACTL_PCODE
 	     ENDIF
 		
-CD	 15.4		
-	  ELSEIF ((PDO.ACTUAL_WEIGHT .GE. 3500) .AND. (PDO.PLAY_CODE .EQ. 'N')) THEN
-C	   é€šç”¨æ–¼15.4(1~2)
-	      IF (((L4ORD.LINE_MARKING .NE. 'NNNN') .AND.
-	1         (L4ORD.LINE_MARKING .NE. ' ')) .AND.
-	1	  (PDO.COIL_NOTE .EQ. 'Y')) THEN
+CD	 15.4
+	ELSEIF ((PDO.ACTUAL_WEIGHT .GE. 3500) .AND. (PDO.PLAY_CODE .EQ. 'N')) THEN
+C	   ³q¥Î©ó15.4(1~2)
+	IF ((((L4ORD.LINE_MARKING .NE. 'NNNN') .AND. 
+	1   (L4ORD.LINE_MARKING .NE. ' ')) 
+	1  .AND. (PDO.COIL_NOTE .EQ. 'Y')) .OR.
+	1   (((L4ORD.LINE_MARKING .EQ. 'NNNN') .OR. 
+	1   (L4ORD.LINE_MARKING .EQ. ' ')) .AND. 
+	1   ((PDO.ACTUAL_WEIGHT .GT. ORDB.UNIT_WEIGHT_MIN) 
+	1   .AND. (PDO.ACTUAL_WEIGHT .LT. ORDB.UNIT_WEIGHT_MAX)))) THEN
 CD	   15.4 (1).
-	        IF((PDO.ACTUAL_WEIGHT .GT. ORDB.UNIT_WEIGHT_MIN) .AND. 
-	1	   (PDO.ACTUAL_WEIGHT .LT. ORDB.UNIT_WEIGHT_MAX)) THEN
-C	    15.4(1A)	
-			IF ((INDEX('111',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
-	1           	   (INDEX('101',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) THEN
+	IF (ORDB.EDGING .EQ. 'M') THEN
+C	15.4(1A)	
+			IF ((INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
+	1           	   (INDEX('100',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) THEN
 				CCODE = 'RSTUY'
 				CLEN = 5
-C	    15.4(1B)			
-	 		ELSEIF ((INDEX('011',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
-	1          		(INDEX('001',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) THEN
+C	15.4(1B)
+			ELSEIF (INDEX('010',PDO.RUNNING_MODE_CAP(3:5))) THEN
 					CCODE = 'TUY'
-					CLEN = 3	
+					CLEN = 3
 C       15.4(1C)
-			ELSEIF ((INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
-	1           		(INDEX('100',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .AND.
+			ELSEIF (((INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
+	1           		(INDEX('100',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) .AND.
 	1           		((PDO.ACTUAL_THICKNESS .GT. 2.0) .AND. 
 	1	     		(PDO.ACTUAL_THICKNESS .LE. 3.0))) THEN
 					CCODE = 'RSTU'
-					CLEN = 4		
+					CLEN = 4
 C	    15.4(1D)	
 			ELSEIF ((INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
 	1        		(INDEX('100',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .AND.
 	1	       		(PDO.ACTUAL_THICKNESS .LE. 2.0)) THEN	
 					CCODE = 'RSYU'
 					CLEN = 4 
-C	    15.4(1E)
-			ELSEIF ((INDEX('010',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
-	1               	(INDEX('000',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) THEN
-					CLEN = 0
+
+C	    15.4(1E 20210806·s¼W)
+			ELSEIF (COIL.ACTL_PCODE(1:1) .EQ. 'D') THEN
+				CCODE = 'STUY'
+				CLEN = 4
+		
 			ELSE
 					CLEN = 0
 			ENDIF
+		
 		L = 1
 		 DO WHILE (L .LE. CLEN)
 		   DO M = I,20
@@ -411,9 +419,56 @@ C	    15.4(1E)
 		END DO	
 	    ACTL_PCODE = COIL.ACTL_PCODE(1:I) // BCODE	
 CD 	15-4 (2).
-	   	ELSEIF((PDO.ACTUAL_WEIGHT .LT. ORDB.UNIT_WEIGHT_MIN) .OR. 
-	1   	      (PDO.ACTUAL_WEIGHT .GT. ORDB.UNIT_WEIGHT_MAX)) THEN       
+	ELSEIF (ORDB.EDGING .EQ. 'C') THEN
 C	15-4(2A)
+	    IF ((INDEX('111',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
+	1      		    (INDEX('101',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) THEN
+				CCODE = 'RSTUY'
+				CLEN = 5
+C	15-4(2B)
+	    ELSEIF ((INDEX('011',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
+	1      			(INDEX('001',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) THEN
+				CCODE = 'TUY'
+				CLEN = 3
+C	15-4(2C)
+	    ELSEIF (((INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
+	1      			(INDEX('100',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) .AND.
+	1               ((PDO.ACTUAL_THICKNESS .GT. 2.0) .AND. 
+	1		        (PDO.ACTUAL_THICKNESS .LE. 3.0))) THEN
+	        CCODE = 'RSTU'
+	        CLEN = 4
+C   15-4(2D)
+	    ELSEIF (((INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
+	1      			(INDEX('100',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) .AND.
+	1               (PDO.ACTUAL_THICKNESS .LE. 2.0)) THEN
+	        CCODE = 'RSYU'
+	        CLEN = 4
+	    ELSE
+		CLEN = 0
+	    ENDIF
+		   L = 1
+		   DO WHILE (L .LE. CLEN)
+		   	DO M = I,20
+		  	 N = INDEX(BCODE,CCODE(L:L))
+		  	 IF (N .GT. 0) THEN
+		  	 	BCODE = BCODE(1:N-1) // BCODE(N+1:)
+		  	 ENDIF
+		  	END DO
+		       L = L + 1
+		    END DO
+		ACTL_PCODE = COIL.ACTL_PCODE(1:I) // BCODE
+	ENDIF
+
+C	15-3
+	ELSEIF ((((L4ORD.LINE_MARKING .NE. 'NNNN') .AND. 
+	1   (L4ORD.LINE_MARKING .NE. ' ')) 
+	1  .AND. (PDO.COIL_NOTE .EQ. 'Y')) .OR.
+	1   (((L4ORD.LINE_MARKING .EQ. 'NNNN') .OR. 
+	1   (L4ORD.LINE_MARKING .EQ. ' ')) .AND. 
+	1   ((PDO.ACTUAL_WEIGHT .LT. ORDB.UNIT_WEIGHT_MIN) 
+	1   .AND. (PDO.ACTUAL_WEIGHT .GT. ORDB.UNIT_WEIGHT_MAX)))) THEN
+
+C	15-4(3A)
 	   		IF (((INDEX('111',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
 	1      		    (INDEX('101',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
 	1      		    (INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
@@ -422,7 +477,7 @@ C	15-4(2A)
 	1		     (PDO.ACTUAL_THICKNESS .LE. 3.0))) THEN
 				CCODE = 'RSTU'
 				CLEN = 4
-C	15-4(2B)
+C	15-4(3B)
 	   		ELSEIF (((INDEX('111',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
 	1      			(INDEX('101',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
 	1      			(INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
@@ -430,7 +485,7 @@ C	15-4(2B)
 	1      			(PDO.ACTUAL_THICKNESS .LE. 2.0)) THEN 	
 				CCODE = 'RSYU'
 				CLEN = 4
-C	15-4(2C)
+C	15-4(3C)
 	   		ELSEIF ((INDEX('010',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
 	1      			(INDEX('000',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
 	1      			(INDEX('110',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
@@ -450,15 +505,14 @@ C	15-4(2C)
 		       L = L + 1
 		    END DO
 		ACTL_PCODE = COIL.ACTL_PCODE(1:I) // BCODE    
-	      ENDIF
-CD	15-4 (3).
+CD	15-4 (4).
 			ELSEIF (
 	1       		(L4ORD.LINE_MARKING .NE. 'NNNN') .AND.
 	1       		(L4ORD.LINE_MARKING .NE. '') .AND.
 	1        		((PDO.COIL_NOTE .EQ. 'N') .OR. (PDO.COIL_NOTE .EQ. 'X'))     
 	1  					) THEN	
 					ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'S'//Z_CODE 	    
-			ENDIF	!é€šç”¨æ–¼15.4(1~2)
+			ENDIF	!³q¥Î©ó15.4
 CD	15-5			
 	  ELSEIF(PDO.ACTUAL_WEIGHT < 3500) THEN	
 		ACTL_PCODE = COIL.ACTL_PCODE(1:I) //'$'
@@ -466,45 +520,48 @@ CD	15-5
 	  ENDIF
 	ENDIF
 
-	COIL.ACTL_PCODE = ACTL_PCODE
+	IF (ACTL_PCODE .NE. '') THEN
+	  COIL.ACTL_PCODE = ACTL_PCODE
+	ENDIF
+	
 
-C ---13.é‹¼æ²ç‹€æ…‹---
+C ---13.¿û±²ª¬ºA---
 	I = COIL.CURR_PROC_IDX
 	IF ((COIL.ACTL_PCODE(I+1:I+1) .EQ. '$') .OR.
 	1   (COIL.ACTL_PCODE(I+1:I+1) .EQ. ' ')) THEN
 		IF (INDEX('69.70',PDO.QC_CODE) .GT. 0) THEN
-	    	COIL.IC_CODE = '70'
+			COIL.IC_CODE = '70'
 		ELSE
 			COIL.IC_CODE = '65'
 		ENDIF
 	ELSE
 		IF (INDEX('69.70',PDO.QC_CODE) .GT. 0) THEN
-	    	COIL.IC_CODE = '70'
+			COIL.IC_CODE = '70'
 		ELSE
 			COIL.IC_CODE = '32'
 		ENDIF
 	ENDIF
-C   ---14.è¨ˆåŠƒè£½ç¨‹ç·¨è™Ÿ(è¨‚å–®)---
-C	ä¸è®Š
-C   ---16.ç›®å‰ç”¢ç·šä½œæ¥­ä»£ç¢¼---
-C	COIL_MOVEåŸ·è¡Œ
-C   ---17.ç›®å‰å¯¦éš›è£½ç¨‹ç´¢å¼•---
-C	COIL_MOVEåŸ·è¡Œ
-C   ---18.è¨ˆåŠƒå†¶é‡‘ç·¨è™Ÿ---
-C	ä¸è®Š
-C   ---19.å¯¦éš›å†¶é‡‘ç·¨è™Ÿ---
-C	ä¸è®Š
-C   ---20.ä¸Šè£½ç¨‹ç”¢ç·š---
-C	COIL_MOVEåŸ·è¡Œ
-C   ---21.æœ¬è£½ç¨‹ç”¢ç·š---
-C	COIL_MOVEåŸ·è¡Œ
-C   ---22.ä¸‹è£½ç¨‹ç”¢ç·š---
-C	COIL_MOVEåŸ·è¡Œ
-C   ---23.æœ¬ç«™ä¹‹è»‹å»¶å‘¨---
-C	COIL_MOVEåŸ·è¡Œ
+C   ---14.­p¹º»sµ{½s¸¹(­q³æ)---
+C	¤£ÅÜ
+C   ---16.¥Ø«e²£½u§@·~¥N½X---
+C	COIL_MOVE°õ¦æ
+C   ---17.¥Ø«e¹ê»Ú»sµ{¯Á¤Þ---
+C	COIL_MOVE°õ¦æ
+C   ---18.­p¹º§Mª÷½s¸¹---
+C	¤£ÅÜ
+C   ---19.¹ê»Ú§Mª÷½s¸¹---
+C	¤£ÅÜ
+C   ---20.¤W»sµ{²£½u---
+C	COIL_MOVE°õ¦æ
+C   ---21.¥»»sµ{²£½u---
+C	COIL_MOVE°õ¦æ
+C   ---22.¤U»sµ{²£½u---
+C	COIL_MOVE°õ¦æ
+C   ---23.¥»¯¸¤§ªî©µ©P---
+C	COIL_MOVE°õ¦æ
 	COIL.R_WEEK = ' '  
-C	---24.ä¸Šè£½ç¨‹ç”¢å‡ºæ—¥æœŸ----
-CD	è‹¥PDOå‚³å‡ºæ™‚é–“=240000å‰‡å°‡å…¶æ”¹æˆä¸‹ä¸€æ—¥çš„000000
+C	---24.¤W»sµ{²£¥X¤é´Á----
+CD	­YPDO¶Ç¥X®É¶¡=240000«h±N¨ä§ï¦¨¤U¤@¤éªº000000
 CD	example , 20201015 24:00:00 -> 20201016 00:00:00
 	IF (PDO.FINISH_TIME .EQ. '240000') THEN
 	   PDO.FINISH_TIME = '000000'
@@ -516,60 +573,67 @@ CD	example , 20201015 24:00:00 -> 20201016 00:00:00
 	
 	STATUS = GR_C8DATE_TO_BIN ( VMS_DATE , %REF(COIL.VMS_DATE) )
 	IF (.NOT. STATUS) THEN
-	   CALL DH_NOTICE('ç”¢å‡ºæ™‚é–“æ ¼å¼éŒ¯èª¤')
+	   CALL DH_NOTICE('²£¥X®É¶¡®æ¦¡¿ù»~')
 	   RETURN
 	ENDIF
 	IF (I .EQ. 1) THEN
 	   CALL GR_ADD_DAY ( %REF(COIL.VMS_DATE) , 1.0 , %REF(COIL.VMS_DATE) )
 	ENDIF
-C 	25.åˆä½µé‹¼æ²æ•¸é‡
+C 	25.¦X¨Ö¿û±²¼Æ¶q
 	COIL.NO_OF_COILS = 1
-C   ---26.é å®šåˆ†åˆ‡ä¹‹è£½ç¨‹ç«™åˆ¥---
+C   ---26.¹w©w¤À¤Á¤§»sµ{¯¸§O---
 	COIL.CUT_STATION= ' '
-C	27~37  ç…§æ¯é‹¼æ²æˆ–å…„å¼Ÿé‹¼æ² (DEFECT_CODE1~5 åœ¨QCåˆ¤æ–·æ™‚æœƒå¾žWIPB040Hå­˜å…¥PDOï¼Œæ‰€ä»¥ç›´æŽ¥æ’ˆå–PDOå³å¯)
-C   ---38.æª¢é©—å¾Œå‡ºæ–™å“è³ªç¢¼---
+C	27~37  ·Ó¥À¿û±²©Î¥S§Ì¿û±² (DEFECT_CODE1~5 ¦bQC§PÂ_®É·|±qWIPB040H¦s¤JPDO¡A©Ò¥Hª½±µ¼´¨úPDO§Y¥i)
+C   ---38.ÀËÅç«á¥X®Æ«~½è½X---
 	COIL.APN_CODE = PDO.SURFACE_CODE
-C   ---39.åˆ‡é‚Šç¢¼--- åœ¨QCåˆ¤æ–·æ™‚æœƒå¾žWIPB040Hå­˜å…¥PDOï¼Œæ‰€ä»¥ç›´æŽ¥æ’ˆå–PDOå³å¯
-C   ---40.è¨—å·¥ç·¨è™Ÿ---
+C   ---39.¤ÁÃä½X--- ¦bQC§PÂ_®É·|±qWIPB040H¦s¤JPDO¡A©Ò¥Hª½±µ¼´¨úPDO§Y¥i
+C   ---40.°U¤u½s¸¹---
 	COIL.OEM_NO = ' '
-C	---41.ç·šä¸Šæ¨™è¨˜ç¢¼---
-	IF (L4ORD.LINE_MARKING .GT. ' ') then
-	 COIL.LINE_MARKING = 'Y'
-	ELSEIF (L4ORD.LINE_MARKING .EQ. ' ') THEN
-	 COIL.LINE_MARKING = 'N'
+C	---41.½u¤W¼Ð°O½X---
+	IF (PDO.COIL_NOTE .EQ. 'Y') THEN
+	  IF (L4ORD.LINE_MARKING .GT. ' ') then
+	     COIL.LINE_MARKING = L4ORD.LINE_MARKING
+	  ELSEIF (L4ORD.LINE_MARKING .EQ. ' ') THEN
+	     COIL.LINE_MARKING = 'KKKK'
+	  ENDIF
+	ELSEIF (PDO.COIL_NOTE .EQ. 'X') THEN
+	  COIL.LINE_MARKING = 'XXXX'
+	ELSE 
+	  COIL.LINE_MARKING = COIL.LINE_MARKING
 	ENDIF
-C   ---42.å¥—ç­’é¡žåˆ¥---
+	
+C   ---42.®Mµ©Ãþ§O---
 	IF (PDO.EXIT_SLEEVE_THICKNESS .GT. 0) THEN
 		WRITE (COIL.SLEEVE_KIND,FMT='(I2)')
 	1	PDO.EXIT_SLEEVE_THICKNESS
 	ELSE
 		COIL.SLEEVE_KIND = ' '
 	ENDIF
-C	---43.è¥¯ç´™é¡žåˆ¥---
+C	---43.Å¨¯ÈÃþ§O---
 	COIL.PAPER_CODE = PDO.PAPER_CODE     
-C   ---44.æ¯é‹¼æ²è™Ÿç¢¼---
+C   ---44.¥À¿û±²¸¹½X---
 	COIL.MOTHER_COIL_NO = PDO.MOTHER_COIL_NO
-C	---45.ä¸Šè£½ç¨‹æŽ’ç¨‹ç·¨è™Ÿ---
+C	---45.¤W»sµ{±Æµ{½s¸¹---
 	COIL.PREV_SCHD_NO = PDO.SCHD_NO
-C   46.ä½œæ¥­ç‹€æ…‹ç¢¼	
+C   46.§@·~ª¬ºA½X	
 	COIL.OPER_CODE = '52'
-C   ---47.æ€¥å–®ç¢¼---
+C   ---47.«æ³æ½X---
 	COIL.RUSH_ORDER = ' '
-C   ---48.é‹¼æ²æ‡‰ç”¨ç¢¼---
+C   ---48.¿û±²À³¥Î½X---
 	COIL.COIL_APPLY = ' '
-C   ---49.ç…‰é‹¼é ­å°¾å¡Š--- ä¸è®Š
-C   ---50.é‹¼æ²é•·åº¦--
+C   ---49.·Ò¿ûÀY§À¶ô--- ¤£ÅÜ
+C   ---50.¿û±²ªø«×--
 	IF (PDO.ACTUAL_LENGTH .GT. 0) THEN
 		COIL.COIL_LENGTH = PDO.ACTUAL_LENGTH
 	ENDIF 
-C	---51.ç”¢å“ä»£ç¢¼---
+C	---51.²£«~¥N½X---
 	COIL.PRODUCT_CODE = COIL.ACTL_PCODE(1:1)
-C   ---52.å“ä¿å‚™è¨»--
-    COIL.QC_COMMENT = PDO.QC_COMMENT    
-C       ---53.å» å€--
+C   ---52.«~«O³Æµù--
+	COIL.QC_COMMENT = PDO.QC_COMMENT    
+C       ---53.¼t°Ï--
 C	COIL.FACTORY = 'A'
-C       ---54.å†·è»‹æ©Ÿè»‹ä¸‹çŽ‡--  æ²¿ç”¨æ¯é‹¼æ²æˆ–å…„å¼Ÿ
-C       ---55.ç”¨é€”é™å®šç¢¼--
+C       ---54.§Nªî¾÷ªî¤U²v--  ªu¥Î¥À¿û±²©Î¥S§Ì
+C       ---55.¥Î³~­­©w½X--
 	DH_ITEM_LIST.STATUS = CPS_RESTRICT_APN
 	1               (
 	1                'CAP',
@@ -581,8 +645,8 @@ C       ---55.ç”¨é€”é™å®šç¢¼--
 	1   (RESTRICT_APN .NE. ' ')) THEN
              COIL.RESTRICT_APN = RESTRICT_APN
 	ENDIF
-C       ---56~ 59ç³»çµ±æ—¥æœŸæ™‚é–“--
-C       ---60.é ä¼°ç¹³åº«æ—¥æœŸ--
+C       ---56~ 59¨t²Î¤é´Á®É¶¡--
+C       ---60.¹w¦ôÃº®w¤é´Á--
         COIL.FORECAST_DATE = ' '
  
 	OPEN   (
@@ -600,7 +664,7 @@ C       ---60.é ä¼°ç¹³åº«æ—¥æœŸ--
 
 
 
-C	å°‡SHIFT_DATEç”±8ç¢¼è½‰ç‚º7ç¢¼
+C	±NSHIFT_DATE¥Ñ8½XÂà¬°7½X
 	CALL GR_C8_TO_C7DATE(PDO.SHIFT_DATE,S_DATE)
 
 
@@ -640,7 +704,7 @@ C	å°‡SHIFT_DATEç”±8ç¢¼è½‰ç‚º7ç¢¼
 	1		COIL.PAPER_CODE
 	1		)
 	IF (.NOT. BTEST(DH_ITEM_LIST.STATUS,0) ) THEN
-	   CALL DH_NOTICE ('é‹¼æ²è³‡æ–™æª”æœªæ›´æ–°')
+	   CALL DH_NOTICE ('¿û±²¸ê®ÆÀÉ¥¼§ó·s')
 	ENDIF
 
 
@@ -649,15 +713,15 @@ C	å°‡SHIFT_DATEç”±8ç¢¼è½‰ç‚º7ç¢¼
 	   CALL CAP_PDO_U ( PDO )
 	   DH_ITEM_LIST.ADDR_TAB.DATA_BUF = %LOC(PDO)
 
-C          è½‰æª”ç™¾å¹´æ—¥æœŸ
+C          ÂàÀÉ¦Ê¦~¤é´Á
 	   CALL GR_C8_TO_C7DATE(PDO.START_DATE,PDO.START_DATE)
 	   CALL GR_C8_TO_C7DATE(PDO.FINISH_DATE,PDO.FINISH_DATE)
 	   CALL GR_C8_TO_C7DATE(PDO.SHIFT_DATE,PDO.SHIFT_DATE)
 
 	   CALL DH_FORM_SEND()
-	   CALL DH_INTERNAL_MSG('è™•ç†å®Œç•¢',2)
+	   CALL DH_INTERNAL_MSG('³B²z§¹²¦',2)
 	ELSE
-	   CALL DH_NOTICE ('è£½ç¨‹è¨˜éŒ„æª”æœªæ›´æ–°')
+	   CALL DH_NOTICE ('»sµ{°O¿ýÀÉ¥¼§ó·s')
 	ENDIF
 
 9000	CONTINUE
@@ -668,4 +732,5 @@ C	CALL LIB$FREE_VM ( SIZEOF(PDI) , PDI_PNT , )
 
 	RETURN
 	END
+
 
