@@ -64,7 +64,10 @@ C	-----------------------------------------------------------------------
 	INTEGER*4   PCM0100M_R
 	INTEGER*4	ORDB011M_R
 	INTEGER*4	PCM0020M_R
+	INTEGER*4	PCM0020M_U
 	INTEGER*4	PCM0023W_R
+	INTEGER*4	PCM0030M_R 
+	INTEGER*4	PCM0030M_U
 	INTEGER*4	COIL_MOVE
 	INTEGER*4	COIL_RECALL
 	INTEGER*4	COIL_CUT
@@ -443,6 +446,13 @@ C   15-4(2D)
 	1               (PDO.ACTUAL_THICKNESS .LE. 2.0)) THEN
 	        CCODE = 'RSYU'
 	        CLEN = 4
+C	15-4(2E 小馬新增) 
+	    ELSEIF (COIL.ACTL_PCODE(1:1) .EQ. 'D') THEN
+		IF ((INDEX('011',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0) .OR.
+	1      	(INDEX('001',PDO.RUNNING_MODE_CAP(3:5)) .GT. 0)) THEN
+		  CCODE = 'STUY'
+		  CLEN = 4
+		ENDIF 
 	    ELSE
 		CLEN = 0
 	    ENDIF
@@ -709,6 +719,45 @@ C	將SHIFT_DATE由8碼轉為7碼
 
 
 	IF (BTEST(DH_ITEM_LIST.STATUS,1) ) THEN
+	   STATUS = PCM0020M_R ( COIL )
+           IF (STATUS .EQ. 0) THEN     
+             COIL.R_WEEK = ' '
+             COIL.NO_OF_COILS = 1
+             COIL.CUT_STATION = ' '
+             COIL.APN_CODE = PDO.SURFACE_CODE
+             COIL.PREV_SCHD_NO = PDO.SCHD_NO
+             COIL.RUSH_ORDER = ' '
+             COIL.COIL_APPLY = ' '
+             COIL.FACTORY = 'A'
+             COIL.FORECAST_DATE = ' '
+ 
+             DH_ITEM_LIST.STATUS = PCM0020M_U ( COIL )
+	   IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+C            -----再次更新COIL_MOVE未更新PCMB030M部份------- 
+                COILH.COIL_NO = PDO.COIL_NO
+                COILH.SCHD_NO = PDO.SCHD_NO 
+                COILH.STATION = 'CAP'
+                DH_ITEM_LIST.STATUS = PCM0030M_R ( COILH , %VAL(-1) )
+                IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+                    DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
+                    IF (DH_ITEM_LIST.STATUS .EQ. 0) THEN
+                      COILH.STEEL_GRADE = PDO.STEEL_GRADE
+                      COILH.APN_CODE = PDO.SURFACE_CODE
+                      COILH.HEAT_NO = COIL.HEAT_NO
+                      COILH.MIC_NO  = COIL.ACTL_MIC_NO
+                      IF (COILH.STATION_IDX .LT. 3) THEN
+                          COILH.PREV_STATION = ' '
+                      ENDIF
+                      COILH.PREV_SCHD_NO = COIL.PREV_SCHD_NO
+                      COILH.SLAB_ID = COIL.SLAB_ID
+                      COILH.OEM_LINE = ' '
+                    ENDIF
+                    DH_ITEM_LIST.STATUS = PCM0030M_U ( COILH, %VAL(-1))
+                ENDIF
+             ENDIF
+           ENDIF
+
+
 	   PDO.TRANSFER = 'Y'
 	   CALL CAP_PDO_U ( PDO )
 	   DH_ITEM_LIST.ADDR_TAB.DATA_BUF = %LOC(PDO)
