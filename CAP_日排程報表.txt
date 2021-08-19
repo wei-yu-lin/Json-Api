@@ -1,0 +1,1053 @@
+
+	SUBROUTINE	DH$_PRINT_SCHD
+	1		(
+	1		FM_COIL,
+	1		TO_COIL
+	1		)
+
+	IMPLICIT 	NONE
+
+C	Include
+C	-----------------------------------------------------------------------
+	INCLUDE 	'CAP$INC:DH.INC'
+	INCLUDE		'CPS$INC:CCAP320M.INC'
+	INCLUDE		'CAP$INC:CAP_PDI.INC'
+	INCLUDE		'HPS$DB$INC:PCM0100M.INC'
+	INCLUDE		'HPS$DB$INC:PCM0070M.INC'
+	INCLUDE		'HPS$DB$INC:PCM0020M.INC'
+	INCLUDE		'HPS$DB$INC:PCM0021M.INC'
+	INCLUDE		'HPS$DB$INC:PCM0110M.INC'
+	INCLUDE         'CPS$INC:ORD.INC'
+
+C	Argument
+C	-----------------------------------------------------------------------
+	CHARACTER*15	FM_COIL
+	CHARACTER*15	TO_COIL
+
+C	Record
+C	-----------------------------------------------------------------------
+	RECORD		/CCAP320M/	ASCHD1
+	POINTER		(ASCHD1_PNT , ASCHD1)
+
+	RECORD		/CAP_PDI/	PDI
+	POINTER		( PDI_PNT , PDI ) 
+
+	RECORD		/PCM0021M/	SUBCOIL
+	POINTER		( SUBCOIL_PNT , SUBCOIL )
+
+	RECORD		/PCM0020M/	COIL
+	POINTER		( COIL_PNT , COIL )
+
+	RECORD		/PCM0100M/	P100M
+	POINTER		( P100M_PNT , P100M )
+
+	RECORD		/PCM0070M/	APN
+	RECORD          /ORDA010M_DEF/  ORDA
+
+        POINTER         ( ORDA_PNT , ORDA )
+	RECORD		/PCM0110M/	P110M
+ 
+	RECORD          /ORDB011M_DEF/  L4ORD
+C	Variable
+C	-----------------------------------------------------------------------
+	BYTE		PS_FLAG
+	INTEGER*2	ROW_CNT,SYSPAGE
+	INTEGER*2	I,PS_IDX
+	INTEGER*4	U_REP,U_RC				! logical unit of report
+	INTEGER*4	P2B_COIL,P2B_WT,P2B_LEN		! 2B  產品
+	INTEGER*4	P2D_COIL,P2D_WT,P2D_LEN		! 2D  產品
+	INTEGER*4	POTH_COIL,POTH_WT,POTH_LEN	! 其他產品
+	INTEGER*4	W1M_COIL,W1M_WT,W1M_LEN		! 米尺
+	INTEGER*4	W4F_COIL,W4F_WT,W4F_LEN		! 四呎
+	INTEGER*4	W5F_COIL,W5F_WT,W5F_LEN		! 五呎
+	INTEGER*4	PTOT_COIL,PTOT_WT,PTOT_LEN
+	INTEGER*4	STRIP_LEN,MILL,STATUS,LIB$GET_LUN
+	CHARACTER*1	PS_CH,RC_YN
+	CHARACTER*3	NEXT_STATION
+	CHARACTER*4	SCHD_STATE , SCHD_DATE , PREV_STATION , SPEC
+	CHARACTER*15	CDT
+	CHARACTER*6	PROCESS
+	CHARACTER*18	LINE_MARK
+	CHARACTER*5	ADW2_TEST
+	INTEGER*4	MARK_STATUS
+	CHARACTER*85	T_WIDTH
+	CHARACTER*21	T_ISOTEXT	!HA-B-33 保存年限:3年
+        CHARACTER*8     DATE
+        CHARACTER*6     TIME
+	CHARACTER*42    MARKS_2
+	CHARACTER*20    BCODE
+C	Function
+C	-----------------------------------------------------------------------
+	INTEGER*4	CAP_PDI_R
+	INTEGER*4	CCAP320M_R
+	INTEGER*4	PCM0020M_U
+	INTEGER*4	PCM0020M_R
+	INTEGER*4	PCM0021M_R
+        INTEGER*4       PCM0100M_R
+        INTEGER*4       ORDA010M_R
+	INTEGER*4	PCM0110M_R
+	INTEGER*4	PCM0070M_R
+	INTEGER*4	NORDB011M_R
+	INTEGER*4	DHSFO_SEA_CRM_SCHED
+        INTEGER*4       DH_YES_NO
+
+C	-----------------------------------------------------------------------
+C					CODE
+C	-----------------------------------------------------------------------
+	T_WIDTH = ''
+	T_ISOTEXT = 'HA-B-33 保存年限:3年'
+	IF (FM_COIL .LE. '           ') THEN
+CD	   clear screen
+	   CALL DH_ENABLE_MASK(900)
+	   CALL LIB$SPAWN('YU_TV1 CPS$REPORT:CAPRS002.TXT 132',,,,,,,,,,,,)
+
+CD	   return to previous mask
+	   CALL DH_PREV_MASK ()
+	   RETURN
+	ENDIF
+
+        DH_ITEM_LIST.STATUS = DH_YES_NO('是否同時產生報表中心 ?')
+        RC_YN = 'N'
+        IF (DH_ITEM_LIST.STATUS) THEN
+                RC_YN = 'Y'
+        ENDIF
+
+
+	CALL LIB$DELETE_FILE('CPS$REPORT:CAPRS002.TXT;*',,,,,,,,)
+
+	STATUS = LIB$GET_LUN(U_REP)
+
+	OPEN	(
+	1	UNIT=U_REP,
+	1	FILE='CPS$REPORT:CAPRS002.TXT',
+	1	STATUS='NEW',
+	1	RECL=180,
+	1	CARRIAGECONTROL='LIST',
+	1	ORGANIZATION='SEQUENTIAL'
+	1	)
+
+
+C       ADD TO REPORT CENTER CPS$RC
+	IF (RC_YN .EQ. 'Y') THEN
+ 
+        CALL GR_GET_LUN( U_RC )
+        CALL GR_GET_C8DATE_TIME (DATE,TIME)
+        OPEN    (
+	1       UNIT=U_RC,
+	1       FILE='CPS$RC:CAP_SCHD_'//DATE(1:8)//'.TXT',
+	1       STATUS='UNKNOWN',
+	1       ACCESS='APPEND',
+	1       RECL=180,
+	1       SHARED
+	1       )
+        ENDIF
+
+C                                        燁 聯 鋼 鐵 股 份 有 限 公 司
+C                                        冷 軋 廠 產 線 日 排 程 報 表
+C報表編號 : CAPRS002                                                                   印表時間 :XXX/XX/XX XX:XX
+C產 線 別 : 冷軋退火酸洗線【CAP】                                                      頁    次 :XXX
+C===============================================================================================================
+C排軋序號   鋼 捲 編 號   鋼  種  入料  入料  鋼帶  入 料  判  襯  套 訂單   訂單編號   廠  製程關係 產品 排程
+C                                 寬度  厚度  長度  重 量  級  紙  筒 裁邊              區  [上  下]      類別
+C===============================================================================================================
+Cmmdd-yyy   XXX-XXXXXXXX  XXXXXX  9999  9.99  9999  99999   X   X  XX   X   XXXXXXX-XX   X  XXXX XXX   X  預排 
+C
+C加工方式: 分切: □分切長度: 9999 M     9999 M     9999 M     9999 M           分    切:[A,B,C,D,E]
+C                □分切單重:99999 Kg   99999 Kg   99999 Kg   99999 Kg
+C訂單資訊: 用途: XXXXXX     客戶: XXXXXXXXXX      訂單限重: XXXXX - XXXXX Kg  不分切  至CTL LINE MARKING  特殊
+C品質備註: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+C---------------------------------------------------------------------------------------------------------------
+C_______________________________________________________________________________________________________________
+C                   捲數    重量[MT]    長度[M]                                 捲數    重量[MT]    長度[M]
+C   --------------------------------------------                    ----------------------------------------
+C    [2D  產品]:    9999    9999.999     999999                      [米尺]:    9999    9999.999     999999
+C    [2B  產品]:    9999    9999.999     999999                      [四呎]:    9999    9999.999     999999
+C    [其他產品]:    9999    9999.999     999999                      [五呎]:    9999    9999.999     999999
+C   --------------------------------------------                    ----------------------------------------
+C    [合    計]:   99999   99999.999    9999999                      [合計]:    99999  99999.999    9999999
+C
+C
+C  注意事項:
+C
+C  □1.鋼捲下製程若為REL及OEM，則請現場切取試片，並注意每捲鋼捲之襯紙及套筒需求。
+C  □2.鋼捲下製程不為REL及OEM，則請現場自行決定廠內套筒之使用。
+
+100	FORMAT (
+	1	T1,A,'-',I4.3,		! 排軋序號
+	1	T12,A,'-',A,		! 鋼捲編號
+	1	T26,A,			! 鋼種
+	1	T34,I4,			! 入料寬度
+	1	T40,F4.2,		! 入料厚度
+	1	T46,I4,			! 鋼帶長度
+	1	T52,I5,			! 入料重量
+	1	T60,A,			! 判級
+	1	T64,A,			! 襯紙
+	1	T67,I2,			! 套筒
+	1	T72,A,			! 訂單裁邊
+	1	T76,A,'-',A,		! 訂單編號
+	1	T89,A,			! 廠區
+	1	T92,A,			! 上製程
+	1	T97,A,			! 下製程
+	1	T103,A,			! 產品
+	1	T106,A			! 排程類別
+	1	)
+
+	SYSPAGE = 0
+	ROW_CNT = 0
+
+	CALL GR_CURRENT_DATE_TIME(CDT)
+
+	CALL LIB$GET_VM ( SIZEOF (ASCHD1) , ASCHD1_PNT , )
+	CALL LIB$GET_VM ( SIZEOF(COIL) , COIL_PNT , )
+	CALL LIB$GET_VM ( SIZEOF(PDI) , PDI_PNT , )
+	CALL LIB$GET_VM ( SIZEOF(SUBCOIL) , SUBCOIL_PNT , )
+        CALL LIB$GET_VM ( SIZEOF(P100M) , P100M_PNT , )
+        CALL LIB$GET_VM ( SIZEOF(ORDA) , ORDA_PNT , )
+
+	CALL DH_WORKING_OUTPUT (1)
+
+	ASCHD1.S_C_NO = FM_COIL
+	DH_ITEM_LIST.STATUS = CCAP320M_R( ASCHD1 )
+
+	DO WHILE ((ASCHD1.S_C_NO .NE. TO_COIL) .AND.
+	1	  (ASCHD1.S_C_NO .GT. '           '))
+	   ASCHD1.S_C_NO = ASCHD1.FP
+	   DH_ITEM_LIST.STATUS = CCAP320M_R( ASCHD1 )
+	ENDDO
+
+	IF ( ASCHD1.S_C_NO .NE. TO_COIL ) THEN
+	   ASCHD1.S_C_NO = TO_COIL
+	   TO_COIL = FM_COIL
+	   FM_COIL = ASCHD1.S_C_NO
+	ENDIF
+
+	ASCHD1.S_C_NO = FM_COIL
+	DH_ITEM_LIST.STATUS = CCAP320M_R( ASCHD1 )
+
+	SCHD_DATE = ' '//ASCHD1.S_C_NO(1:3)
+	IF (SCHD_DATE(2:2) .EQ. 'A') THEN
+	   SCHD_DATE(1:2) = '10'
+	ELSEIF (SCHD_DATE(2:2) .EQ. 'B') THEN
+	   SCHD_DATE(1:2) = '11'
+	ELSEIF (SCHD_DATE(2:2) .EQ. 'C') THEN
+	   SCHD_DATE(1:2) = '12'
+	ENDIF
+
+	P2B_COIL = 0
+	P2B_WT = 0
+	P2B_LEN = 0
+	P2D_COIL = 0
+	P2D_WT = 0
+	P2D_LEN = 0
+	POTH_COIL = 0
+	POTH_WT = 0
+	POTH_LEN = 0
+	W1M_COIL = 0
+	W1M_WT = 0
+	W1M_LEN = 0
+	W4F_COIL = 0
+	W4F_WT = 0
+	W4F_LEN = 0
+	W5F_COIL = 0
+	W5F_WT = 0
+	W5F_LEN = 0
+	PTOT_COIL = 0
+	PTOT_WT = 0
+	PTOT_LEN = 0
+
+	DO WHILE ((DH_ITEM_LIST.STATUS .EQ. 0) .AND.
+	1	  (ASCHD1.S_C_NO .GT. '               '))
+
+	   IF ( ROW_CNT .EQ. 0 ) THEN
+	      CALL CAPRS002_TITLE ( U_REP,CDT,SYSPAGE,ROW_CNT,'1' )
+		IF (RC_YN .EQ. 'Y') THEN
+	      	   CALL CAPRS002_TITLE ( U_RC,CDT,SYSPAGE,ROW_CNT,'2' )
+		ENDIF
+	   ENDIF
+
+	   COIL.COIL_ID = ASCHD1.S_C_NO(5:15)
+	   DH_ITEM_LIST.STATUS = PCM0020M_R ( COIL )
+	   IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
+	      WRITE (6,*) COIL.COIL_ID,' 不存在於PCM0020M.',DH_ITEM_LIST.STATUS
+	      COIL.STEEL_GRADE = ' '
+	      COIL.CLASS_CODE = ' '
+	      COIL.FACTORY = ' '
+	      COIL.COIL_WIDTH = 0
+	      COIL.COIL_THICK = 0
+	      COIL.COIL_WT = 0
+	      COIL.NO_OF_COILS = 1
+	   ENDIF
+
+	   IF (COIL.NO_OF_COILS .GT. 5) THEN
+	      COIL.NO_OF_COILS = 5
+	   ENDIF
+
+	   SCHD_STATE = '    '
+	   PREV_STATION = '????'
+	   NEXT_STATION = '???'
+
+	   NEXT_STATION = COIL.NEXT_STATION
+	
+	   IF (INDEX('41.42.43.44',COIL.OPER_CODE) .GT. 0 ) THEN
+		SELECT CASE (COIL.OPER_CODE)
+		    CASE ('41')
+		    	PREV_STATION = 'CRM1'		
+		    CASE ('42')
+		    	PREV_STATION = 'CRM2'		
+		    CASE ('43')
+		    	PREV_STATION = 'CRM3'		
+		    CASE ('44')
+		    	PREV_STATION = 'CRM4'
+		END SELECT		
+	   ELSE 
+		IF ( ASCHD1.STATE .EQ. 'P') THEN
+		     SCHD_STATE = '預排'
+	   	     PS_IDX = COIL.CURR_PROC_IDX
+	   	     P110M.CODE = COIL.ACTL_PCODE (PS_IDX : PS_IDX)
+	   	     STATUS = PCM0110M_R ( P110M )
+		     DO WHILE ((P110M.STATION .NE. 'CAP') .AND.
+	1                (PS_IDX .LE. 20) .AND. (STATUS .EQ. 0))
+	          	PS_IDX = PS_IDX + 1
+	          	P110M.CODE = COIL.ACTL_PCODE (PS_IDX : PS_IDX)
+	          	STATUS = PCM0110M_R ( P110M )
+		     ENDDO
+
+		     IF ( PS_IDX .LT. 20 ) THEN
+ 			! 下製程
+	                P110M.CODE = COIL.ACTL_PCODE ((PS_IDX + 1) : 
+	1						(PS_IDX + 1))
+			STATUS = PCM0110M_R ( P110M )
+			NEXT_STATION = P110M.STATION
+		     END IF
+		
+		     MILL = DHSFO_SEA_CRM_SCHED ( ASCHD1 )
+		     IF ( MILL .EQ. 1 ) THEN
+			PREV_STATION = 'CRM1'
+		     ELSEIF ( MILL .EQ. 2 ) THEN
+			PREV_STATION = 'CRM2'
+		     ELSEIF ( MILL .EQ. 3 ) THEN
+			PREV_STATION = 'CRM3'
+		     ELSEIF ( MILL .EQ. 4 ) THEN
+			PREV_STATION = 'CRM4'
+		     ELSE
+			PREV_STATION = 'ERR.'
+		     ENDIF		   
+		ELSE
+		     PREV_STATION = COIL.PREV_STATION	
+		END IF
+
+	   END IF
+C	20200509
+	 P100M.ORD_NO = COIL.ORD_NO
+         DH_ITEM_LIST.STATUS = PCM0100M_R ( P100M )
+
+	L4ORD.ORDER_NO = COIL.ORD_NO(1:7)
+	 L4ORD.ORDER_ITEM = COIL.ORD_NO(8:9)
+	 DH_ITEM_LIST.STATUS = NORDB011M_R ( L4ORD )
+	 I = COIL.CURR_PROC_IDX 
+	 BCODE = COIL.ACTL_PCODE(I+1:)
+
+		IF  ((INDEX(BCODE,'L') .GT. 0) .OR.
+	1           (INDEX(BCODE,'M') .GT. 0) .OR.
+	1	    (INDEX(BCODE,'N') .GT. 0)) then
+	    		NEXT_STATION='CRM'
+      		ELSEIF (INDEX('TL01,NS02,GP01,TL00,TL02',P100M.APN_NO) .GT. 0) THEN
+	    		NEXT_STATION='STL'
+      		ELSEIF ((P100M.COIL_IN_DIAM .EQ. 508) .AND. (L4ORD.SHIP_THICK_AIM .LE. 2)) THEN 
+			NEXT_STATION='TLL'
+		ELSEIF ((P100M.COIL_IN_DIAM .EQ. 508) .AND. 
+	1	((L4ORD.SHIP_THICK_AIM .GT. 2) .AND. (L4ORD.SHIP_THICK_AIM .LE. 3))) THEN
+			 NEXT_STATION='CTL'
+		ELSEIF (INDEX(BCODE,'Z') .GT. 0) THEN
+			NEXT_STATION='OEM'
+		ELSE 
+			NEXT_STATION='REL'
+		ENDIF
+
+
+	   SUBCOIL.COIL_ID = COIL.COIL_ID
+	   SUBCOIL.SEQ = 1
+	   DH_ITEM_LIST.STATUS = PCM0021M_R ( SUBCOIL )
+	   IF ((DH_ITEM_LIST.STATUS .NE. 0) .OR.
+	1      (SUBCOIL.ORD_NO .LE. '         ')) THEN
+	      SUBCOIL.ORD_NO = ' '
+	      SUBCOIL.AVAILABLE = ' '
+	   ENDIF
+
+	   IF (COIL.COIL_WIDTH * COIL.COIL_THICK .NE. 0) THEN
+	      STRIP_LEN = 1000 * COIL.COIL_WT / 
+	1		(7.93 * COIL.COIL_WIDTH * COIL.COIL_THICK)
+	   ELSE
+	      STRIP_LEN = 0
+	   ENDIF
+
+	   CALL LIB$MOVC5 ( 0,,0,SIZEOF(PDI),PDI )
+	   PDI.COIL_NO = COIL.COIL_ID
+	   
+	   DH_ITEM_LIST.STATUS = CAP_PDI_R ( PDI )
+	   IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
+	      WRITE (6,*) COIL.COIL_ID,' 不存在於PDI. ',DH_ITEM_LIST.STATUS
+	     PDI.RUNNING_MODE_CAP = '    '
+	   ENDIF
+
+	   !RUNNING_MODE
+	       MARKS_2(1:1) = '['
+	       MARKS_2(6:6) = ','
+	       MARKS_2(11:11) = ','
+	       MARKS_2(16:16) = ','
+	       MARKS_2(21:21) = ','
+	       MARKS_2(26:26) = ']'	
+	   MARKS_2(2:5) = '   '
+	   MARKS_2(7:10) = '   '
+	   MARKS_2(12:15) = '   '
+	   MARKS_2(17:20) = '   '
+	   MARKS_2(22:25) = '   '
+	   IF (PDI.RUNNING_MODE_CAP(1:1) .EQ. '1') THEN
+		MARKS_2(2:5) = '退火'
+	   END IF
+			 	
+	   IF (PDI.RUNNING_MODE_CAP(2:2) .EQ. '1') THEN
+		MARKS_2(7:10) = '酸洗'
+	   END IF
+
+ 	   IF (PDI.RUNNING_MODE_CAP(3:3) .EQ. '1') THEN
+		MARKS_2(12:15) = '調質'
+	   END IF
+
+ 	   IF (PDI.RUNNING_MODE_CAP(4:4) .EQ. '1') THEN
+		MARKS_2(17:20) = '整平'
+	   END IF
+	
+	   IF (PDI.RUNNING_MODE_CAP(5:5) .EQ. '1') THEN
+ 	        MARKS_2(22:25) = '修邊'
+	   END IF
+
+
+	   P100M.ORD_NO = COIL.ORD_NO
+	   DH_ITEM_LIST.STATUS = PCM0100M_R ( P100M )
+	   IF (DH_ITEM_LIST.STATUS .NE. 0) THEN
+	      P100M.UNIT_WT_MIN = 0		! 訂單下限重 
+	      P100M.UNIT_WT_MAX = 0     	! 訂單上限重
+	      P100M.EDGING = ' '		! 裁邊
+	      P100M.CUST_NO = ' '		! 客戶
+	      P100M.APN_NO = ' '		! 用途
+	      P100M.COIL_IN_DIAM = 0		! 內徑
+	   ELSE
+	      ! 客戶
+	      ORDA.SHORT_NAME = ' ' 
+	      ORDA.CUST_NO = P100M.CUST_NO
+	      DH_ITEM_LIST.STATUS = ORDA010M_R ( ORDA )
+	      ! 用途
+	      APN.DESC_PP = ' '
+	      APN.CODE_QC = P100M.APN_NO 
+	      DH_ITEM_LIST.STATUS = PCM0070M_R ( APN )
+	   ENDIF
+
+	   SPEC = '    '
+	   IF (( APN.CODE_QC .EQ. 'GD01' ) .AND.
+	1      ( COIL.ACTL_PCODE(1:1) .EQ. 'E' )) THEN
+	      SPEC = '特殊'
+	   ELSEIF ( COIL.STEEL_GRADE(1:6) .EQ. '0304Q1' ) THEN
+	      SPEC = '特殊'
+	   ENDIF
+
+	   CALL DH_PDI_CAL_PCS ( PDI )
+
+	   PROCESS = ' '
+	   ROW_CNT = ROW_CNT + 6
+	   IF (PDI.DIVIDING_CODE(1:1) .EQ. '1') THEN
+	      PROCESS = '不 分 切'
+	      ROW_CNT = ROW_CNT - 2
+	   ENDIF
+
+	   IF ( ROW_CNT .GT. 57 ) THEN
+	      WRITE (U_REP,*) T_WIDTH//T_ISOTEXT
+	      WRITE (U_REP,*) ''
+
+	      IF (RC_YN .EQ. 'Y') THEN
+                WRITE (U_RC,*) T_WIDTH//T_ISOTEXT
+                WRITE (U_RC,*) '< 跳頁 >'
+	      ENDIF
+	      ROW_CNT = 0
+	      CALL CAPRS002_TITLE ( U_REP,CDT,SYSPAGE,ROW_CNT,'1' )
+	      IF (RC_YN .EQ. 'Y') THEN
+	      	   CALL CAPRS002_TITLE ( U_RC,CDT,SYSPAGE,ROW_CNT,'2' )
+	      ENDIF
+	      IF (PDI.DIVIDING_CODE(1:1) .EQ. '1') THEN
+		 ROW_CNT = ROW_CNT + 4
+	      ELSE
+		 ROW_CNT = ROW_CNT + 6
+	      ENDIF
+ 	   ENDIF
+
+CA	+---------------------------------------------------+
+CA	|應生計要求COIL.QC_COMMENT及COIL.FACTORY暫時設為空白|
+CA	+---------------------------------------------------+
+C	   COIL.QC_COMMENT = ' '
+C	   COIL.FACTORY = ' '
+
+	   WRITE (U_REP,100,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	ASCHD1.S_C_NO(1:4),ASCHD1.SEQ,
+	1	ASCHD1.S_C_NO(5:7),ASCHD1.S_C_NO(8:15),
+	1	COIL.STEEL_GRADE(1:6),
+	1	PDI.ENTRY_WIDTH,
+	1	PDI.ENTRY_THICKNESS,
+	1	COIL.COIL_LENGTH,
+	1	PDI.ENTRY_WEIGHT,
+	1	PDI.CLASS_CODE,
+	1	PDI.PAPER_CODE,
+	1	PDI.EXIT_SLEEVE_THICKNESS,
+	1	P100M.EDGING,
+	1	SUBCOIL.ORD_NO(1:7) ,SUBCOIL.ORD_NO(8:9),
+	1	COIL.FACTORY,
+	1	PREV_STATION,
+	1	NEXT_STATION,
+	1	COIL.ACTL_PCODE(1:1),
+	1	SCHD_STATE
+
+	IF (RC_YN .EQ. 'Y') THEN
+	   WRITE (U_RC,100,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	ASCHD1.S_C_NO(1:4),ASCHD1.SEQ,
+	1	ASCHD1.S_C_NO(5:7),ASCHD1.S_C_NO(8:15),
+	1	COIL.STEEL_GRADE(1:6),
+	1	PDI.ENTRY_WIDTH,
+	1	PDI.ENTRY_THICKNESS,
+	1	COIL.COIL_LENGTH,
+	1	PDI.ENTRY_WEIGHT,
+	1	PDI.CLASS_CODE,
+	1	PDI.PAPER_CODE,
+	1	PDI.EXIT_SLEEVE_THICKNESS,
+	1	P100M.EDGING,
+	1	SUBCOIL.ORD_NO(1:7) ,SUBCOIL.ORD_NO(8:9),
+	1	COIL.FACTORY,
+	1	PREV_STATION,
+	1	NEXT_STATION,
+	1	COIL.ACTL_PCODE(1:1),
+	1	SCHD_STATE
+	
+	ENDIF
+
+110	FORMAT ( T1,A,T30,I4,T35,A)
+111	FORMAT ( T1,A,T30,I4,T35,A,T41,I4,T46,A,T79,A)
+112	FORMAT ( T1,A,T30,I4,T35,A,T41,I4,T46,A,T51,I4,T56,A,T79,A)
+113	FORMAT ( T1,A,T30,I4,T35,A,T41,I4,T46,A,T51,I4,T56,A,T62,I4,T67,A,
+	1	 T79,A)
+
+120	FORMAT ( T11,A,T30,I4,T35,A,T79,A)
+121	FORMAT ( T11,A,T30,I4,T35,A,T79,I4,T45,A)
+122	FORMAT ( T11,A,T30,I4,T35,A,T79,I4,T45,A,T50,I5,T56,A)
+123	FORMAT ( T11,A,T30,I4,T35,A,T79,I4,T45,A,T50,I5,T56,A,T61,I5,T67,A)
+
+
+130	FORMAT ( T17,A,T29,I5,T35,A)
+
+131	FORMAT (T1,A,T17,A,T28,A,T34,A,T50,A,T60,I5,T66,A,T68,I5,T73,A,T78,A,
+	1	T86,A,T106,A)
+
+160	FORMAT (T1,A9,T11,A40,T53,A,T76,A,T102,A)
+
+	  IF (PDI.ENTRY_WIDTH .NE. PDI.TARGET_WIDTH) THEN
+	      WRITE (U_REP,110,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 裁邊: □裁邊寬度:',
+	1	    PDI.TARGET_WIDTH,'mm'
+	   ENDIF
+
+	   IF (PDI.DIVIDING_CODE(1:1) .EQ. '2') THEN
+	      WRITE (U_REP,120,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M','分    切:[A,B]'
+
+	      WRITE (U_REP,130,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg'
+
+	   ELSEIF (PDI.DIVIDING_CODE(1:1) .EQ. '3') THEN
+
+ 	      WRITE (U_REP,111,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M',PDI.LEN_PC2,'M','分    切:[A,B,C]'
+
+	      WRITE (U_REP,121,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg',PDI.WEIGHT_PC2,'Kg'
+	   ELSEIF (PDI.DIVIDING_CODE(1:1) .EQ. '4') THEN
+
+	      WRITE (U_REP,112,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M',PDI.LEN_PC2,'M',
+	1	    PDI.LEN_PC3,'M','分    切:[A,B,C,D]'
+
+	      WRITE (U_REP,122,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg',PDI.WEIGHT_PC2,'Kg',
+	1	    PDI.WEIGHT_PC3,'Kg'
+	   ELSEIF (PDI.DIVIDING_CODE(1:1) .EQ. '5') THEN
+	      WRITE (U_REP,113,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M',PDI.LEN_PC2,'M',
+	1	    PDI.LEN_PC3,'M',PDI.LEN_PC4,'M','分    切:[A,B,C,D,E]'
+
+	      WRITE (U_REP,123,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg',PDI.WEIGHT_PC2,'Kg',
+	1	    PDI.WEIGHT_PC3,'Kg',PDI.WEIGHT_PC4,'Kg'
+
+	   END IF
+
+	 IF (RC_YN .EQ. 'Y') THEN	       
+
+		IF (PDI.ENTRY_WIDTH .NE. PDI.TARGET_WIDTH) THEN
+	      WRITE (U_RC,110,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 裁邊: □裁邊寬度:',
+	1	    PDI.TARGET_WIDTH,'mm'
+	       ENDIF
+	     IF (PDI.DIVIDING_CODE(1:1) .EQ. '2') THEN
+	        WRITE (U_RC,120,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M','分    切:[A,B]'
+
+	        WRITE (U_RC,130,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg'   
+	      ELSEIF (PDI.DIVIDING_CODE(1:1) .EQ. '3') THEN
+	        WRITE (U_RC,111,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M',PDI.LEN_PC2,'M','分    切:[A,B,C]'
+
+	        WRITE (U_RC,121,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg',PDI.WEIGHT_PC2,'Kg'
+	      ELSEIF (PDI.DIVIDING_CODE(1:1) .EQ. '4') THEN
+	        WRITE (U_RC,112,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M',PDI.LEN_PC2,'M',
+	1	    PDI.LEN_PC3,'M','分    切:[A,B,C,D]'
+
+	        WRITE (U_RC,122,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg',PDI.WEIGHT_PC2,'Kg',
+	1	    PDI.WEIGHT_PC3,'Kg'
+	       ELSEIF (PDI.DIVIDING_CODE(1:1) .EQ. '5') THEN
+	        WRITE (U_RC,113,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '加工方式: 分切: □分切長度:',
+	1	    PDI.LEN_PC1,'M',PDI.LEN_PC2,'M',
+	1	    PDI.LEN_PC3,'M',PDI.LEN_PC4,'M','分    切:[A,B,C,D,E]'
+
+	        WRITE (U_RC,123,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	    '□分切單重:',
+	1	    PDI.WEIGHT_PC1,'Kg',PDI.WEIGHT_PC2,'Kg',
+	1	    PDI.WEIGHT_PC3,'Kg',PDI.WEIGHT_PC4,'Kg'
+
+	      ENDIF
+	 ENDIF
+
+
+	   LINE_MARK = '                 ' 
+	   L4ORD.ORDER_NO = COIL.ORD_NO(1:7)
+	   L4ORD.ORDER_ITEM = COIL.ORD_NO(8:9)
+	   DH_ITEM_LIST.STATUS = NORDB011M_R ( L4ORD )
+		CALL MIC_LINE_MARK(L4ORD.LINE_MARKING,MARK_STATUS)
+
+	
+	   IF (((NEXT_STATION .NE. 'REL') .AND. 
+	1	(NEXT_STATION .NE. 'PKL')) .AND. 
+	1	((COIL.ACTL_PCODE(1:1) .EQ. 'B') .or.
+	1      (COIL.ACTL_PCODE(1:1) .EQ. 'D')) .AND.
+	1	(MARK_STATUS .EQ. 0 ))
+	1	THEN
+	     LINE_MARK = '至CTL LINE MARKING'
+	
+	  ELSEIF (((NEXT_STATION .EQ. 'REL') .OR.
+	1	  (NEXT_STATION .EQ. 'PKL')) .AND.
+	1	  ((COIL.ACTL_PCODE(1:1) .EQ. 'B') .or.
+	1	  (COIL.ACTL_PCODE(1:1) .EQ. 'D')) .AND.
+	1	  (MARK_STATUS .EQ. 0 )) THEN
+	      LINE_MARK = 'LINE_MARKING('//L4ORD.LINE_MARKING//')'	     
+	   ENDIF
+
+C	   IF (((NEXT_STATION .EQ. 'REL') .OR. 
+C	1	(NEXT_STATION .EQ. 'PKL')) .AND. 
+C	1      (COIL.ACTL_PCODE(1:1) .EQ. 'D') .AND.
+C	1	(MARK_STATUS .EQ. 0 ))
+C	1	THEN
+C	     IF (COIL.NEXT_STATION .EQ. NEXT_STATION) THEN
+C	       COIL.NEXT_STATION = 'CTL'
+C	       COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+1:COIL.CURR_PROC_IDX+2)='Y$'
+C	     ELSE
+C	       COIL.ACTL_PCODE(COIL.CURR_PROC_IDX+2:COIL.CURR_PROC_IDX+3)='Y$'
+C	     ENDIF
+C	     DH_ITEM_LIST.STATUS = PCM0020M_U(COIL)
+C	   ENDIF
+
+	   ! ADW2_TEST
+	   ADW2_TEST = ' '
+	   IF (INDEX('REL,OEM',NEXT_STATION) .GT. 0) THEN
+	      CALL DHSFO_TQC_ADW2(COIL.ORD_NO,ADW2_TEST)
+	      MARKS_2(35:39) = ADW2_TEST
+	   END IF
+	
+	   WRITE (U_REP,131,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	 '訂單資訊: 用途:' , APN.DESC_PP,
+	1	 '客戶:' , ORDA.SHORT_NAME,
+	1	 '訂單限重:' , P100M.UNIT_WT_MIN,
+	1	 '-' , P100M.UNIT_WT_MAX , ' Kg' , PROCESS , LINE_MARK, SPEC
+
+           IF (RC_YN .EQ. 'Y') THEN
+	   WRITE (U_RC,131,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	 '訂單資訊: 用途:' , APN.DESC_PP,
+	1	 '客戶:' , ORDA.SHORT_NAME,
+	1	 '訂單限重:' , P100M.UNIT_WT_MIN,
+	1	 '-' , P100M.UNIT_WT_MAX , ' Kg' , PROCESS , LINE_MARK, SPEC
+           ENDIF
+
+	   IF (PDI.PAPER_CODE .EQ. 'N') THEN
+	     WRITE (U_REP,160,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'品質備註:' , COIL.QC_COMMENT,'不加襯紙'//'  '//
+	1	'RUNNING MODE:',MARKS_2(1:26),
+	1	MARKS_2(35:39)	
+		
+              IF (RC_YN .EQ. 'Y') THEN
+	     	WRITE (U_RC,160,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'品質備註:' , COIL.QC_COMMENT,'不加襯紙'//'  '//
+	1	'RUNNING MODE:',MARKS_2(1:26),
+	1	MARKS_2(35:39)	
+              ENDIF
+	   ELSE
+	     WRITE (U_REP,160,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'品質備註:' , COIL.QC_COMMENT,
+	1	'RUNNING MODE:',MARKS_2(1:26),
+	1	MARKS_2(35:39)	
+
+              IF (RC_YN .EQ. 'Y') THEN
+	     	WRITE (U_RC,160,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'品質備註:' , COIL.QC_COMMENT,
+	1	'RUNNING MODE:',MARKS_2(1:26),
+	1	MARKS_2(35:39)	
+              ENDIF
+
+	   ENDIF
+
+	   WRITE (U_REP,FMT='(T1,A)')
+	1	'------------------------------------------------------'//
+	1	'---------------------------------------------------------'
+
+           IF (RC_YN .EQ. 'Y') THEN
+	   	WRITE (U_REP,FMT='(T1,A)')
+	1	'------------------------------------------------------'//
+	1	'---------------------------------------------------------'
+           ENDIF
+
+	   IF (( PDI.ENTRY_WIDTH .GE. 1301 ) .AND. 
+	1      ( PDI.ENTRY_WIDTH .LE. 1600 )) THEN
+	      W5F_COIL = W5F_COIL + 1
+	      W5F_WT = W5F_WT + PDI.ENTRY_WEIGHT
+	      W5F_LEN = W5F_LEN + COIL.COIL_LENGTH
+	   ELSEIF (( PDI.ENTRY_WIDTH .GE. 1101 ) .AND.
+	1	   ( PDI.ENTRY_WIDTH .LE. 1300 )) THEN
+	      W4F_COIL = W4F_COIL + 1
+	      W4F_WT = W4F_WT + PDI.ENTRY_WEIGHT
+	      W4F_LEN = W4F_LEN + COIL.COIL_LENGTH
+	   ELSEIF (( PDI.ENTRY_WIDTH .GE. 800 ) .AND.
+	1	   ( PDI.ENTRY_WIDTH .LE. 1100 )) THEN
+	      W1M_COIL = W1M_COIL + 1
+	      W1M_WT = W1M_WT + PDI.ENTRY_WEIGHT
+	      W1M_LEN = W1M_LEN + COIL.COIL_LENGTH
+	   ENDIF
+
+	   IF ( COIL.ACTL_PCODE(1:1) .EQ. 'D') THEN
+	      P2D_COIL = P2D_COIL + 1
+	      P2D_WT = P2D_WT + PDI.ENTRY_WEIGHT
+	      P2D_LEN = P2D_LEN + COIL.COIL_LENGTH
+	   ELSEIF ( INDEX('BU',COIL.ACTL_PCODE(1:1)) .GT. 0 ) THEN
+	      P2B_COIL = P2B_COIL + 1
+	      P2B_WT = P2B_WT + PDI.ENTRY_WEIGHT
+	      P2B_LEN = P2B_LEN + COIL.COIL_LENGTH
+	   ELSE
+	      POTH_COIL = POTH_COIL + 1
+	      POTH_WT = POTH_WT + PDI.ENTRY_WEIGHT
+	      POTH_LEN = POTH_LEN + COIL.COIL_LENGTH
+	   ENDIF
+
+	   PTOT_COIL = PTOT_COIL + 1
+	   PTOT_WT = PTOT_WT + PDI.ENTRY_WEIGHT
+	   PTOT_LEN = PTOT_LEN + COIL.COIL_LENGTH
+
+	   IF (ASCHD1.S_C_NO .EQ. TO_COIL) THEN
+	      DH_ITEM_LIST.STATUS = 100
+	   ELSE
+CD	      skip to next record
+	      ASCHD1.S_C_NO = ASCHD1.FP
+	      DH_ITEM_LIST.STATUS = CCAP320M_R( ASCHD1 )
+	   ENDIF
+
+	ENDDO
+
+	ROW_CNT = ROW_CNT + 14
+
+	IF ( ROW_CNT .GT. 57 ) THEN
+	   SYSPAGE = SYSPAGE + 1
+	   WRITE (U_REP,*) T_WIDTH//T_ISOTEXT
+	   WRITE (U_REP,*) ''
+
+	   WRITE (U_REP,FMT='(T41,A)') '燁 聯 鋼 鐵 股 份 有 限 公 司'
+
+	   WRITE (U_REP,FMT='(T41,A)') '冷 軋 廠 產 線 日 排 程 報 表'
+
+	   WRITE (U_REP,FMT='(T1,A,T86,A)')
+	1	 '報表編號 : CAPRS002',
+	1	 '印表時間 :'//CDT
+
+	   WRITE (U_REP,FMT='(T1,A,T86,A,T97,I3)')
+	1	 '產 線 別 : 冷軋退火酸洗線【CAP】',
+	1	 '頁    次 :',SYSPAGE
+
+	   WRITE (U_REP,FMT='(A)')
+	1	 '======================================================'//
+	1	 '========================================================='
+
+          IF (RC_YN .EQ. 'Y') THEN
+	   WRITE (U_RC,*) T_WIDTH//T_ISOTEXT
+	   WRITE (U_RC,*) ''
+
+	   WRITE (U_RC,FMT='(T41,A)') '燁 聯 鋼 鐵 股 份 有 限 公 司'
+
+	   WRITE (U_RC,FMT='(T41,A)') '冷 軋 廠 產 線 日 排 程 報 表'
+
+	   WRITE (U_RC,FMT='(T1,A,T86,A)')
+	1	 '報表編號 : CAPRS002',
+	1	 '印表時間 :'//CDT
+
+	   WRITE (U_RC,FMT='(T1,A,T86,A,T97,I3)')
+	1	 '產 線 別 : 冷軋退火酸洗線【CAP】',
+	1	 '頁    次 :',SYSPAGE
+
+	   WRITE (U_RC,FMT='(A)')
+	1	 '======================================================'//
+	1	 '========================================================='
+
+          ENDIF
+	ENDIF 
+
+	WRITE (U_REP,FMT='(T1,A)')
+	1     '_______________________________________________________'//
+	1     '________________________________________________________'
+
+	WRITE (U_REP,FMT='(T20,A,T80,A)') 
+	1	'捲數    重量[MT]    長度[M]',
+	1	'捲數    重量[MT]    長度[M]'
+
+	WRITE (U_REP,FMT='(T4,A,T64,A)')
+	1	'--------------------------------------------',
+	1	'--------------------------------------------'
+
+        IF (RC_YN .EQ. 'Y') THEN
+	WRITE (U_RC,FMT='(T1,A)')
+	1     '_______________________________________________________'//
+	1     '________________________________________________________'
+
+	WRITE (U_RC,FMT='(T20,A,T80,A)') 
+	1	'捲數    重量[MT]    長度[M]',
+	1	'捲數    重量[MT]    長度[M]'
+
+	WRITE (U_RC,FMT='(T4,A,T64,A)')
+	1	'--------------------------------------------',
+	1	'--------------------------------------------'
+
+        ENDIF
+
+140	FORMAT ( T5,A,T20,I4,T28,F8.3,T41,I6,T69,A,T80,I4,T88,F8.3,T101,I6)
+
+	WRITE (U_REP,140,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[2D  產品]:',P2D_COIL,P2D_WT / 1000.0,P2D_LEN,
+	1	'[米尺]:',W1M_COIL,W1M_WT / 1000.0,W1M_LEN
+
+	WRITE (U_REP,140,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[2B  產品]:',P2B_COIL,P2B_WT / 1000.0,P2B_LEN,
+	1	'[四呎]:',W4F_COIL,W4F_WT / 1000.0,W4F_LEN
+
+	WRITE (U_REP,140,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[其他產品]:',POTH_COIL,POTH_WT / 1000.0,POTH_LEN,
+	1	'[五呎]:',W5F_COIL,W5F_WT / 1000.0,W5F_LEN
+
+	WRITE (U_REP,FMT='(T4,A,T64,A)')
+	1	'--------------------------------------------',
+	1	'--------------------------------------------'
+
+        IF (RC_YN .EQ. 'Y') THEN
+	WRITE (U_RC,140,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[2D  產品]:',P2D_COIL,P2D_WT / 1000.0,P2D_LEN,
+	1	'[米尺]:',W1M_COIL,W1M_WT / 1000.0,W1M_LEN
+
+	WRITE (U_RC,140,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[2B  產品]:',P2B_COIL,P2B_WT / 1000.0,P2B_LEN,
+	1	'[四呎]:',W4F_COIL,W4F_WT / 1000.0,W4F_LEN
+
+	WRITE (U_RC,140,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[其他產品]:',POTH_COIL,POTH_WT / 1000.0,POTH_LEN,
+	1	'[五呎]:',W5F_COIL,W5F_WT / 1000.0,W5F_LEN
+
+	WRITE (U_RC,FMT='(T4,A,T64,A)')
+	1	'--------------------------------------------',
+	1	'--------------------------------------------'
+
+        ENDIF
+
+150	FORMAT ( T5,A,T19,I5,T27,F9.3,T40,I7,T69,A,T79,I5,T87,F9.3,T100,I7)
+
+	WRITE (U_REP,150,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[合    計]:',PTOT_COIL,PTOT_WT / 1000.0,PTOT_LEN,
+	1	'[合計]:',PTOT_COIL,PTOT_WT / 1000.0,PTOT_LEN
+
+	WRITE (U_REP,*) ' '
+	WRITE (U_REP,*) ' '
+	WRITE (U_REP,FMT='(T3,A)') '注意事項:'
+	WRITE (U_REP,*) ' '
+	WRITE (U_REP,FMT='(T3,A)')
+	1     '□1.鋼捲下製程若為REL及OEM，則請現場切取試片，'//
+	1     '並注意每捲鋼捲之襯紙及套筒需求。'
+	WRITE (U_REP,FMT='(T3,A)')
+	1     '□2.鋼捲下製程不為REL及OEM，則請現場自行決定廠內套筒之使用。'
+	WRITE (U_REP,FMT='(T3,A)')
+	1     '□3.襯紙代碼: A->紙襯紙  B->PVC襯紙  C->PP襯紙  D->PE襯紙'//
+	1     '  N->不加襯紙。'
+	WRITE (U_REP,FMT='(T3,A)')
+	1     '□4.套筒代碼: 18->紙套筒  50->鋼套筒  60->鐵套筒  00->不加套筒。'
+
+
+
+	WRITE (U_REP,*) T_WIDTH//T_ISOTEXT
+
+        IF (RC_YN .EQ. 'Y') THEN
+	WRITE (U_RC,150,IOSTAT=DH_ITEM_LIST.STATUS)
+	1	'[合    計]:',PTOT_COIL,PTOT_WT / 1000.0,PTOT_LEN,
+	1	'[合計]:',PTOT_COIL,PTOT_WT / 1000.0,PTOT_LEN
+
+	WRITE (U_RC,*) ' '
+	WRITE (U_RC,*) ' '
+	WRITE (U_RC,FMT='(T3,A)') '注意事項:'
+	WRITE (U_RC,*) ' '
+	WRITE (U_RC,FMT='(T3,A)')
+	1     '□1.鋼捲下製程若為REL及OEM，則請現場切取試片，'//
+	1     '並注意每捲鋼捲之襯紙及套筒需求。'
+	WRITE (U_RC,FMT='(T3,A)')
+	1     '□2.鋼捲下製程不為REL及OEM，則請現場自行決定廠內套筒之使用。'
+	WRITE (U_RC,FMT='(T3,A)')
+	1     '□3.襯紙代碼: A->紙襯紙  B->PVC襯紙  C->PP襯紙  D->PE襯紙'//
+	1     '  N->不加襯紙。'
+	WRITE (U_RC,FMT='(T3,A)')
+	1     '□4.套筒代碼: 18->紙套筒  50->鋼套筒  60->鐵套筒  00->不加套筒。'	
+
+	WRITE (U_RC,*) T_WIDTH//T_ISOTEXT
+
+	CALL GR_CLOSE ( U_RC )
+        ENDIF
+
+	CALL GR_CLOSE ( U_REP )
+
+	CALL DH_WORKING_OUTPUT (0)
+
+CD	clear screen
+	CALL DH_ENABLE_MASK(900)
+
+	CALL LIB$SPAWN('YU_TV1 CPS$REPORT:CAPRS002.TXT 132',,,,,,,,,,,,)
+
+CD	return to previous mask
+	CALL DH_PREV_MASK ()
+
+	CALL LIB$FREE_VM ( SIZEOF (ASCHD1) , ASCHD1_PNT , )
+	CALL LIB$FREE_VM ( SIZEOF(COIL) , COIL_PNT , )
+	CALL LIB$FREE_VM ( SIZEOF(PDI) , PDI_PNT , )
+	CALL LIB$FREE_VM ( SIZEOF(SUBCOIL) , SUBCOIL_PNT , )
+        CALL LIB$FREE_VM ( SIZEOF(P100M) , P100M_PNT , )
+        CALL LIB$FREE_VM ( SIZEOF(ORDA) , ORDA_PNT , )
+
+	RETURN
+
+	END
+
+
+
+C	***********************************************************************
+C	***********************************************************************
+
+	SUBROUTINE CAPRS002_TITLE ( U_REP,CDT,SYSPAGE,ROW_CNT,S_CODE )
+
+	IMPLICIT	NONE
+
+C	-----------------------------------------------------------------------
+	INTEGER*2	SYSPAGE,ROW_CNT
+	INTEGER*4	U_REP
+	CHARACTER*4	SCHD_DATE
+	CHARACTER*15	CDT
+	CHARACTER*1     S_CODE
+
+C                                        燁 聯 鋼 鐵 股 份 有 限 公 司
+C                                        冷 軋 廠 產 線 日 排 程 報 表
+C報表編號 : CAPRS002                                                                   印表時間 :XXX/XX/XX XX:XX
+C產 線 別 : 冷軋退火酸洗線【CAP】                                                      頁    次 :XXX
+C===============================================================================================================
+C排軋序號   鋼 捲 編 號   鋼  種  入料  入料  鋼帶  入 料  判  襯  套 訂單   訂單編號   廠  製程關係 產品 排程
+C                                 寬度  厚度  長度  重 量  級  紙  筒 裁邊              區  [上  下]      類別
+C===============================================================================================================
+Cmmdd-yyy   XXX-XXXXXXXX  XXXXXX  9999  9.99  9999  99999   X   X  XX   X   XXXXXXX-XX   X  XXXX XXX   X  預排 
+C
+C加工方式: 分切: □分切長度: 9999 M     9999 M     9999 M     9999 M           分    切:[A,B,C,D,E]
+C                □分切單重:99999 Kg   99999 Kg   99999 Kg   99999 Kg
+C訂單資訊: 用途: XXXXXX     客戶: XXXXXXXXXX      訂單限重: XXXXX - XXXXX Kg   不 分 切
+C品質備註: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+C---------------------------------------------------------------------------------------------------------------
+C_______________________________________________________________________________________________________________
+C                   捲數    重量[MT]    長度[M]                                 捲數    重量[MT]    長度[M]
+C   --------------------------------------------                    ----------------------------------------
+C    [2D  產品]:    9999    9999.999     999999                      [米尺]:    9999    9999.999     999999
+C    [2B  產品]:    9999    9999.999     999999                      [四呎]:    9999    9999.999     999999
+C    [其他產品]:    9999    9999.999     999999                      [五呎]:    9999    9999.999     999999
+C   --------------------------------------------                    ----------------------------------------
+C    [合    計]:   99999   99999.999    9999999                      [合計]:    99999  99999.999    9999999
+C
+C
+C  注意事項:
+C
+C  □1.鋼捲下製程若為REL及OEM，則請現場切取試片，並注意每捲鋼捲之襯紙及套筒需求。
+C  □2.鋼捲下製程不為REL及OEM，則請現場自行決定廠內套筒之使用。
+
+c
+C	-----------------------------------------------------------------------
+C					Code
+C	-----------------------------------------------------------------------
+	IF (S_CODE .EQ. '1') THEN
+		SYSPAGE = SYSPAGE + 1
+		ROW_CNT = ROW_CNT + 8
+	ENDIF
+
+	WRITE (U_REP,FMT='(T41,A)') '燁 聯 鋼 鐵 股 份 有 限 公 司'
+
+	WRITE (U_REP,FMT='(T41,A)') '冷 軋 廠 產 線 日 排 程 報 表'
+
+	WRITE (U_REP,FMT='(T1,A,T86,A)')
+	1       '報表編號 : CAPRS002',
+	1       '印表時間 :'//CDT
+
+	WRITE (U_REP,FMT='(T1,A,T86,A,T97,I3)')
+	1       '產 線 別 : 冷軋退火酸洗線【CAP】',
+	1       '頁    次 :',SYSPAGE
+
+	WRITE (U_REP,FMT='(A)')
+	1     '======================================================'//
+	1     '========================================================='
+
+	WRITE (U_REP,FMT='(A)')
+	1     '排軋序號   鋼 捲 編 號   鋼  種  入料  入料  鋼帶  入 料'//
+	1     '  判  襯  套 訂單   訂單編號   廠  製程關係 產品 排程'
+
+	WRITE (U_REP,FMT='(A)')
+	1     '                                 寬度  厚度  長度  重 量'//
+	1     '  級  紙  筒 裁邊              區  [上  下]      類別'
+
+	WRITE (U_REP,FMT='(A)')
+	1     '======================================================'//
+	1     '========================================================='
+
+	RETURN
+
+	END
